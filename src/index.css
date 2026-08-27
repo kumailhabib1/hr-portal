@@ -1,0 +1,253 @@
+@import "tailwindcss";
+
+/* Tailwind v4: use class-based dark mode */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ================================
+   GLOBAL
+================================ */
+
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: #f8fafc;
+  color: #0f172a;
+
+.sidebar-nav {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  display: none;
+}
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+
+html.dark body {
+  background: #000;
+  color: #f1f5f9;
+}
+
+html.dark #root {
+  background: #000;
+}
+
+/* ================================
+   ANIMATIONS
+================================ */
+
+@keyframes headerGlow {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(400%);
+  }
+}
+
+@keyframes profileDrop {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.96);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes searchDrop {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes themePop {
+  0% {
+    transform: rotate(-20deg) scale(0.7);
+    opacity: 0;
+  }
+
+  100% {
+    transform: rotate(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes splashLogo {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) rotate(-12deg);
+  }
+
+  70% {
+    transform: scale(1.08) rotate(2deg);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
+@keyframes splashContent {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes splashLoader {
+  0% {
+    transform: translateX(-140%);
+  }
+
+  50%,
+  100% {
+    transform: translateX(280%);
+  }
+}
+
+/* ================================
+   DARK CONTENT SURFACES
+================================ */
+
+html.dark main .bg-white {
+  background-color: #000 !important;
+}
+
+html.dark main [class~="text-slate-900"],
+html.dark main [class~="text-slate-800"] {
+  color: #f8fafc !important;
+}
+
+html.dark main [class~="text-slate-700"] {
+  color: #e2e8f0 !important;
+}
+
+html.dark main [class~="text-slate-500"],
+html.dark main [class~="text-slate-400"] {
+  color: #94a3b8 !important;
+}
+
+html.dark main [class*="border-slate-200"] {
+  border-color: #1e293b !important;
+}
+
+html.dark .profile-page {
+  background: #000;
+  color: #f8fafc;
+}
+
+html.dark .profile-page .bg-white {
+  background-color: #09090b !important;
+}
+
+html.dark .profile-page [class~="bg-slate-50"],
+html.dark .profile-page [class~="bg-slate-50/70"] {
+  background-color: #111827 !important;
+}
+
+html.dark .profile-page [class~="border-slate-100"],
+html.dark .profile-page [class~="border-slate-200"] {
+  border-color: #1f2937 !important;
+}
+
+html.dark .profile-page [class~="border-white"] {
+  border-color: #09090b !important;
+}
+
+html.dark .profile-page [class~="text-slate-900"],
+html.dark .profile-page [class~="text-slate-700"],
+html.dark .profile-page [class~="text-slate-600"] {
+  color: #f1f5f9 !important;
+}
+
+html.dark .profile-page [class~="text-slate-500"] {
+  color: #94a3b8 !important;
+}
+
+html.dark .profile-page [class~="bg-blue-50"] {
+  background-color: #172554 !important;
+}
+
+html.dark .profile-page [class~="bg-violet-50"] {
+  background-color: #2e1065 !important;
+}
+
+html.dark .profile-page [class~="bg-emerald-50"] {
+  background-color: #052e16 !important;
+}
+
+html.dark .profile-page [class~="bg-amber-50"] {
+  background-color: #451a03 !important;
+}
+
+html.dark .settings-page {
+  background: #000;
+  color: #f8fafc;
+}
+
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@keyframes loginEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.97);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes logoShine {
+  0% {
+    left: -80px;
+  }
+
+  35% {
+    left: 120px;
+  }
+
+  100% {
+    left: 120px;
+  }
+}
+
+@import "tailwindcss";
+
+@keyframes loginEnter {
+  0% {
+    opacity: 0;
+    transform: translateX(30px) scale(0.97);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
