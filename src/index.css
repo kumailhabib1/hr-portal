@@ -7,6 +7,136 @@
    GLOBAL
 ================================ */
 
+html.dark .performance-page .bg-white {
+  background-color: #111827 !important;
+}
+
+html.dark .performance-page .bg-slate-50 {
+  background-color: #0f172a !important;
+}
+
+html.dark .performance-page .bg-slate-100 {
+  background-color: #1e293b !important;
+}
+
+html.dark .performance-page .border-slate-200,
+html.dark .performance-page .border-slate-100 {
+  border-color: #243047 !important;
+}
+
+html.dark .performance-page .text-slate-900,
+html.dark .performance-page .text-slate-800,
+html.dark .performance-page .text-slate-700 {
+  color: #f1f5f9 !important;
+}
+
+html.dark .performance-page .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+html.dark .performance-page .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+html.dark .performance-page .text-slate-400 {
+  color: #64748b !important;
+}
+
+html.dark .performance-page input,
+html.dark .performance-page select {
+  color: #e2e8f0;
+}
+
+html.dark .performance-page select option {
+  background-color: #111827;
+  color: #e2e8f0;
+}
+
+html.dark .performance-page .hover\:bg-slate-50:hover {
+  background-color: #1e293b !important;
+}
+
+html.dark .performance-page h1,
+html.dark .performance-page h2,
+html.dark .performance-page h3 {
+  color: #f8fafc;
+}
+
+html.dark .performance-page .bg-indigo-50 {
+  background-color: rgb(79 70 229 / 18%) !important;
+}
+
+html.dark .performance-page .bg-blue-50 {
+  background-color: rgb(37 99 235 / 18%) !important;
+}
+
+html.dark .performance-page .bg-emerald-50 {
+  background-color: rgb(16 185 129 / 18%) !important;
+}
+
+html.dark .performance-page .bg-amber-50 {
+  background-color: rgb(245 158 11 / 18%) !important;
+}
+
+html.dark .performance-page .text-indigo-600 {
+  color: #a5b4fc !important;
+}
+
+html.dark .performance-page .text-indigo-700 {
+  color: #c7d2fe !important;
+}
+
+html.dark .performance-page .text-blue-600 {
+  color: #93c5fd !important;
+}
+
+html.dark .performance-page .text-emerald-600 {
+  color: #6ee7b7 !important;
+}
+
+html.dark .performance-page .text-amber-600 {
+  color: #fcd34d !important;
+}
+
+.performance-page {
+  overflow-x: clip;
+  overscroll-behavior-x: none;
+}
+
+.performance-filter-scroll,
+.performance-table-scroll {
+  scrollbar-color: #94a3b8 transparent;
+  scrollbar-width: thin;
+}
+
+.performance-filter-scroll::-webkit-scrollbar,
+.performance-table-scroll::-webkit-scrollbar {
+  height: 7px;
+}
+
+.performance-filter-scroll::-webkit-scrollbar-track,
+.performance-table-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.performance-filter-scroll::-webkit-scrollbar-thumb,
+.performance-table-scroll::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+  background-color: #94a3b8;
+}
+
+html.dark .performance-filter-scroll,
+html.dark .performance-table-scroll {
+  scrollbar-color: #475569 transparent;
+}
+
+html.dark .performance-filter-scroll::-webkit-scrollbar-thumb,
+html.dark .performance-table-scroll::-webkit-scrollbar-thumb {
+  background-color: #475569;
+}
+
 .portal-card {
   isolation: isolate;
   border: 1px solid #e2e8f0;

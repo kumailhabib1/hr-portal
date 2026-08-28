@@ -12,7 +12,13 @@ import {
   CheckCircle2,
   Clock3,
   AlertCircle,
+  ClipboardCheck,
+  BarChart3,
 } from "lucide-react";
+
+/* =========================================================
+   DEPARTMENTS
+========================================================= */
 
 const departments = [
   { name: "All Departments", count: 48 },
@@ -24,6 +30,10 @@ const departments = [
   { name: "Design", count: 6 },
 ];
 
+/* =========================================================
+   PERFORMANCE DATA
+========================================================= */
+
 const performanceData = [
   {
     id: "EMP-001",
@@ -33,7 +43,6 @@ const performanceData = [
     department: "Engineering",
     score: 92,
     rating: "Excellent",
-    goals: 95,
     completed: 9,
     totalGoals: 10,
     reviews: "Completed",
@@ -46,7 +55,6 @@ const performanceData = [
     department: "Engineering",
     score: 84,
     rating: "Very Good",
-    goals: 88,
     completed: 8,
     totalGoals: 10,
     reviews: "Completed",
@@ -59,7 +67,6 @@ const performanceData = [
     department: "Human Resources",
     score: 96,
     rating: "Excellent",
-    goals: 98,
     completed: 10,
     totalGoals: 10,
     reviews: "Completed",
@@ -72,7 +79,6 @@ const performanceData = [
     department: "Human Resources",
     score: 76,
     rating: "Good",
-    goals: 72,
     completed: 7,
     totalGoals: 10,
     reviews: "Pending",
@@ -85,7 +91,6 @@ const performanceData = [
     department: "Marketing",
     score: 89,
     rating: "Very Good",
-    goals: 91,
     completed: 9,
     totalGoals: 10,
     reviews: "Completed",
@@ -98,7 +103,6 @@ const performanceData = [
     department: "Finance",
     score: 68,
     rating: "Needs Improvement",
-    goals: 65,
     completed: 6,
     totalGoals: 10,
     reviews: "Pending",
@@ -111,7 +115,6 @@ const performanceData = [
     department: "Operations",
     score: 94,
     rating: "Excellent",
-    goals: 96,
     completed: 10,
     totalGoals: 10,
     reviews: "Completed",
@@ -124,25 +127,32 @@ const performanceData = [
     department: "Design",
     score: 87,
     rating: "Very Good",
-    goals: 85,
     completed: 8,
     totalGoals: 10,
     reviews: "Completed",
   },
 ];
 
+/* =========================================================
+   RATING BADGE
+========================================================= */
+
 function RatingBadge({ rating }) {
   const styles = {
-    Excellent: "border-emerald-100 bg-emerald-50 text-emerald-700",
-    "Very Good": "border-blue-100 bg-blue-50 text-blue-700",
-    Good: "border-amber-100 bg-amber-50 text-amber-700",
-    "Needs Improvement": "border-red-100 bg-red-50 text-red-600",
+    Excellent:
+      "border-emerald-100 bg-emerald-50 text-emerald-700",
+    "Very Good":
+      "border-blue-100 bg-blue-50 text-blue-700",
+    Good:
+      "border-amber-100 bg-amber-50 text-amber-700",
+    "Needs Improvement":
+      "border-red-100 bg-red-50 text-red-600",
   };
 
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${
-        styles[rating]
+        styles[rating] || "border-slate-200 bg-slate-50 text-slate-600"
       }`}
     >
       <Star size={13} />
@@ -150,6 +160,10 @@ function RatingBadge({ rating }) {
     </span>
   );
 }
+
+/* =========================================================
+   REVIEW BADGE
+========================================================= */
 
 function ReviewBadge({ status }) {
   return (
@@ -171,26 +185,27 @@ function ReviewBadge({ status }) {
   );
 }
 
+/* =========================================================
+   PERFORMANCE SCORE
+========================================================= */
+
 function Score({ score }) {
   let textColor = "text-emerald-600";
+  let progressColor = "bg-emerald-500";
 
   if (score < 75) {
     textColor = "text-red-500";
+    progressColor = "bg-red-500";
   } else if (score < 85) {
     textColor = "text-amber-600";
+    progressColor = "bg-amber-500";
   }
 
   return (
     <div className="flex items-center gap-3">
       <div className="h-2 w-20 overflow-hidden rounded-full bg-slate-100">
         <div
-          className={`h-full rounded-full ${
-            score >= 85
-              ? "bg-emerald-500"
-              : score >= 75
-              ? "bg-amber-500"
-              : "bg-red-500"
-          }`}
+          className={`h-full rounded-full ${progressColor}`}
           style={{ width: `${score}%` }}
         />
       </div>
@@ -202,32 +217,55 @@ function Score({ score }) {
   );
 }
 
+/* =========================================================
+   PERFORMANCE PAGE
+========================================================= */
+
 function Performance() {
   const [selectedDepartment, setSelectedDepartment] =
     useState("All Departments");
 
   const [search, setSearch] = useState("");
 
-  const [selectedRating, setSelectedRating] = useState("All");
+  const [selectedRating, setSelectedRating] =
+    useState("All");
 
-  const filteredEmployees = performanceData.filter((employee) => {
-    const departmentMatch =
-      selectedDepartment === "All Departments" ||
-      employee.department === selectedDepartment;
+  /* =======================================================
+     FILTER DATA
+  ======================================================= */
 
-    const ratingMatch =
-      selectedRating === "All" ||
-      employee.rating === selectedRating;
+  const filteredEmployees = performanceData.filter(
+    (employee) => {
+      const departmentMatch =
+        selectedDepartment === "All Departments" ||
+        employee.department === selectedDepartment;
 
-    const searchMatch =
-      employee.name.toLowerCase().includes(search.toLowerCase()) ||
-      employee.id.toLowerCase().includes(search.toLowerCase()) ||
-      employee.department
-        .toLowerCase()
-        .includes(search.toLowerCase());
+      const ratingMatch =
+        selectedRating === "All" ||
+        employee.rating === selectedRating;
 
-    return departmentMatch && ratingMatch && searchMatch;
-  });
+      const searchMatch =
+        employee.name
+          .toLowerCase()
+          .includes(search.toLowerCase()) ||
+        employee.id
+          .toLowerCase()
+          .includes(search.toLowerCase()) ||
+        employee.department
+          .toLowerCase()
+          .includes(search.toLowerCase());
+
+      return (
+        departmentMatch &&
+        ratingMatch &&
+        searchMatch
+      );
+    }
+  );
+
+  /* =======================================================
+     SUMMARY CALCULATIONS
+  ======================================================= */
 
   const averageScore = Math.round(
     performanceData.reduce(
@@ -248,22 +286,48 @@ function Performance() {
     (employee) => employee.score < 75
   ).length;
 
-  return (
-    <div className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8">
+  /* =======================================================
+     RATING COUNTS
+  ======================================================= */
 
-      {/* HEADER */}
+  const ratingCounts = {
+    Excellent: performanceData.filter(
+      (employee) => employee.rating === "Excellent"
+    ).length,
+
+    "Very Good": performanceData.filter(
+      (employee) => employee.rating === "Very Good"
+    ).length,
+
+    Good: performanceData.filter(
+      (employee) => employee.rating === "Good"
+    ).length,
+
+    "Needs Improvement": performanceData.filter(
+      (employee) => employee.rating === "Needs Improvement"
+    ).length,
+  };
+
+  return (
+    <div className="performance-page min-h-screen bg-slate-50 p-4 text-slate-900 transition-colors duration-300 dark:bg-[#080d18] dark:text-slate-100 sm:p-6 lg:p-8">
+
+      {/* =====================================================
+          HEADER
+      ===================================================== */}
+
       <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
 
         <div>
           <div className="mb-2 flex items-center gap-2 text-xs text-slate-500">
             <span>HR Portal</span>
             <span>/</span>
+
             <span className="font-medium text-slate-700">
               Performance
             </span>
           </div>
 
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+          <h1 className="portal-heading text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
             Performance
           </h1>
 
@@ -273,12 +337,12 @@ function Performance() {
         </div>
 
         {/* REVIEW PERIOD */}
+
         <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
 
-          <Target
-            size={18}
-            className="text-emerald-600"
-          />
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+            <Target size={18} />
+          </div>
 
           <div>
             <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
@@ -291,33 +355,64 @@ function Performance() {
           </div>
 
         </div>
-
       </div>
 
-      {/* ACTIONS */}
+      {/* =====================================================
+          ACTION BUTTONS
+      ===================================================== */}
+
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
 
-        <button className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50">
+        <button
+          className="
+            flex items-center justify-center gap-2
+            rounded-xl
+            border border-slate-200
+            bg-white
+            px-5 py-3
+            text-sm font-semibold
+            text-slate-600
+            shadow-sm
+            transition
+            hover:bg-slate-50
+          "
+        >
           <Target size={17} />
           Manage Goals
         </button>
 
-        <button className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700">
+        <button
+          className="
+            flex items-center justify-center gap-2
+            rounded-xl
+            bg-indigo-600
+            px-5 py-3
+            text-sm font-semibold
+            text-white
+            shadow-lg shadow-indigo-600/20
+            transition
+            hover:bg-indigo-700
+          "
+        >
           <Award size={17} />
           Start Review
         </button>
 
       </div>
 
-      {/* SUMMARY CARDS */}
+      {/* =====================================================
+          SUMMARY CARDS
+      ===================================================== */}
+
       <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 
-        {/* Average */}
+        {/* Average Performance */}
+
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
 
           <div className="flex items-center justify-between">
 
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
               <TrendingUp size={21} />
             </div>
 
@@ -337,7 +432,8 @@ function Performance() {
 
         </div>
 
-        {/* Employees */}
+        {/* Employees Reviewed */}
+
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
 
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
@@ -352,9 +448,14 @@ function Performance() {
             {completedReviews}
           </h2>
 
+          <p className="mt-1 text-xs text-slate-400">
+            of {performanceData.length} employees
+          </p>
+
         </div>
 
         {/* Excellent */}
+
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
 
           <div className="flex items-center justify-between">
@@ -380,6 +481,7 @@ function Performance() {
         </div>
 
         {/* Improvement */}
+
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
 
           <div className="flex items-center justify-between">
@@ -406,32 +508,44 @@ function Performance() {
 
       </div>
 
-      {/* PERFORMANCE OVERVIEW */}
+      {/* =====================================================
+          PERFORMANCE OVERVIEW
+      ===================================================== */}
+
       <div className="mb-8 grid gap-4 lg:grid-cols-3">
 
-        {/* Overall Score */}
+        {/* Overall */}
+
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
 
           <div className="flex items-center justify-between">
 
             <div>
-              <h2 className="text-lg font-bold text-slate-900">
-                Performance Overview
-              </h2>
+              <div className="flex items-center gap-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                  <BarChart3 size={18} />
+                </div>
 
-              <p className="mt-1 text-sm text-slate-500">
+                <h2 className="text-lg font-bold text-slate-900">
+                  Performance Overview
+                </h2>
+              </div>
+
+              <p className="mt-2 text-sm text-slate-500">
                 Organization-wide performance summary
               </p>
             </div>
 
-            <div className="rounded-xl bg-emerald-50 px-4 py-3 text-center">
-              <p className="text-[10px] uppercase tracking-wider text-emerald-600">
+            <div className="rounded-xl bg-indigo-50 px-4 py-3 text-center">
+
+              <p className="text-[10px] uppercase tracking-wider text-indigo-600">
                 Overall
               </p>
 
-              <p className="text-xl font-bold text-emerald-700">
+              <p className="text-xl font-bold text-indigo-700">
                 {averageScore}%
               </p>
+
             </div>
 
           </div>
@@ -474,7 +588,7 @@ function Performance() {
                 <div className="h-2 overflow-hidden rounded-full bg-slate-100">
 
                   <div
-                    className="h-full rounded-full bg-emerald-500"
+                    className="h-full rounded-full bg-indigo-500"
                     style={{
                       width: `${item.value}%`,
                     }}
@@ -491,90 +605,74 @@ function Performance() {
         </div>
 
         {/* Rating Distribution */}
+
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
 
-          <h2 className="text-lg font-bold text-slate-900">
-            Rating Distribution
-          </h2>
+          <div className="flex items-center gap-3">
 
-          <p className="mt-1 text-sm text-slate-500">
-            Current employee ratings
-          </p>
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+              <Star size={18} />
+            </div>
+
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">
+                Rating Distribution
+              </h2>
+
+              <p className="text-sm text-slate-500">
+                Current employee ratings
+              </p>
+            </div>
+
+          </div>
 
           <div className="mt-6 space-y-5">
 
-            {[
-              {
-                label: "Excellent",
-                value: performanceData.filter(
-                  (e) => e.rating === "Excellent"
-                ).length,
-                total: performanceData.length,
-              },
-              {
-                label: "Very Good",
-                value: performanceData.filter(
-                  (e) => e.rating === "Very Good"
-                ).length,
-                total: performanceData.length,
-              },
-              {
-                label: "Good",
-                value: performanceData.filter(
-                  (e) => e.rating === "Good"
-                ).length,
-                total: performanceData.length,
-              },
-              {
-                label: "Needs Improvement",
-                value: performanceData.filter(
-                  (e) => e.rating === "Needs Improvement"
-                ).length,
-                total: performanceData.length,
-              },
-            ].map((item) => {
+            {Object.entries(ratingCounts).map(
+              ([label, value]) => {
 
-              const percentage = Math.round(
-                (item.value / item.total) * 100
-              );
+                const percentage = Math.round(
+                  (value / performanceData.length) * 100
+                );
 
-              return (
-                <div key={item.label}>
+                return (
+                  <div key={label}>
 
-                  <div className="mb-2 flex items-center justify-between">
+                    <div className="mb-2 flex items-center justify-between">
 
-                    <span className="text-xs font-medium text-slate-600">
-                      {item.label}
-                    </span>
+                      <span className="text-xs font-medium text-slate-600">
+                        {label}
+                      </span>
 
-                    <span className="text-xs font-bold text-slate-700">
-                      {item.value}
-                    </span>
+                      <span className="text-xs font-bold text-slate-700">
+                        {value}
+                      </span>
+
+                    </div>
+
+                    <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+
+                      <div
+                        className={`h-full rounded-full ${
+                          label === "Excellent"
+                            ? "bg-emerald-500"
+                            : label === "Very Good"
+                            ? "bg-blue-500"
+                            : label === "Good"
+                            ? "bg-amber-500"
+                            : "bg-red-500"
+                        }`}
+                        style={{
+                          width: `${percentage}%`,
+                        }}
+                      />
+
+                    </div>
 
                   </div>
-
-                  <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-
-                    <div
-                      className={`h-full rounded-full ${
-                        item.label === "Excellent"
-                          ? "bg-emerald-500"
-                          : item.label === "Very Good"
-                          ? "bg-blue-500"
-                          : item.label === "Good"
-                          ? "bg-amber-500"
-                          : "bg-red-500"
-                      }`}
-                      style={{
-                        width: `${percentage}%`,
-                      }}
-                    />
-
-                  </div>
-
-                </div>
-              );
-            })}
+                );
+              }
+            )}
 
           </div>
 
@@ -582,7 +680,10 @@ function Performance() {
 
       </div>
 
-      {/* DEPARTMENTS */}
+      {/* =====================================================
+          DEPARTMENT FILTER
+      ===================================================== */}
+
       <div className="mb-6">
 
         <div className="mb-4">
@@ -597,7 +698,7 @@ function Performance() {
 
         </div>
 
-        <div className="flex gap-3 overflow-x-auto pb-2">
+        <div className="performance-filter-scroll flex gap-3 overflow-x-auto pb-2">
 
           {departments.map((department) => (
 
@@ -606,11 +707,17 @@ function Performance() {
               onClick={() =>
                 setSelectedDepartment(department.name)
               }
-              className={`flex min-w-fit items-center gap-3 rounded-xl border px-4 py-3 transition ${
-                selectedDepartment === department.name
-                  ? "border-emerald-600 bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
-                  : "border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:bg-emerald-50"
-              }`}
+              className={`
+                flex min-w-fit items-center gap-3
+                rounded-xl border
+                px-4 py-3
+                transition
+                ${
+                  selectedDepartment === department.name
+                    ? "border-indigo-600 bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:bg-indigo-50"
+                }
+              `}
             >
 
               <Users size={16} />
@@ -620,11 +727,14 @@ function Performance() {
               </span>
 
               <span
-                className={`rounded-full px-2 py-0.5 text-[10px] ${
-                  selectedDepartment === department.name
-                    ? "bg-white/20 text-white"
-                    : "bg-slate-100 text-slate-500"
-                }`}
+                className={`
+                  rounded-full px-2 py-0.5 text-[10px]
+                  ${
+                    selectedDepartment === department.name
+                      ? "bg-white/20 text-white"
+                      : "bg-slate-100 text-slate-500"
+                  }
+                `}
               >
                 {department.count}
               </span>
@@ -637,10 +747,14 @@ function Performance() {
 
       </div>
 
-      {/* PERFORMANCE TABLE */}
+      {/* =====================================================
+          PERFORMANCE TABLE
+      ===================================================== */}
+
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
         {/* TOOLBAR */}
+
         <div className="border-b border-slate-200 p-5 sm:p-6">
 
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -662,7 +776,8 @@ function Performance() {
             <div className="flex flex-col gap-3 sm:flex-row">
 
               {/* SEARCH */}
-              <div className="flex h-11 items-center rounded-xl border border-slate-200 bg-slate-50 px-3 focus-within:border-emerald-400 focus-within:bg-white">
+
+              <div className="flex h-11 items-center rounded-xl border border-slate-200 bg-slate-50 px-3 transition focus-within:border-indigo-400 focus-within:bg-white">
 
                 <Search
                   size={17}
@@ -681,6 +796,7 @@ function Performance() {
               </div>
 
               {/* RATING */}
+
               <div className="relative">
 
                 <select
@@ -688,15 +804,40 @@ function Performance() {
                   onChange={(e) =>
                     setSelectedRating(e.target.value)
                   }
-                  className="h-11 appearance-none rounded-xl border border-slate-200 bg-white pl-4 pr-10 text-sm font-medium text-slate-600 outline-none focus:border-emerald-400"
+                  className="
+                    h-11
+                    appearance-none
+                    rounded-xl
+                    border border-slate-200
+                    bg-white
+                    pl-4 pr-10
+                    text-sm font-medium
+                    text-slate-600
+                    outline-none
+                    focus:border-indigo-400
+                  "
                 >
-                  <option value="All">All Ratings</option>
-                  <option value="Excellent">Excellent</option>
-                  <option value="Very Good">Very Good</option>
-                  <option value="Good">Good</option>
+
+                  <option value="All">
+                    All Ratings
+                  </option>
+
+                  <option value="Excellent">
+                    Excellent
+                  </option>
+
+                  <option value="Very Good">
+                    Very Good
+                  </option>
+
+                  <option value="Good">
+                    Good
+                  </option>
+
                   <option value="Needs Improvement">
                     Needs Improvement
                   </option>
+
                 </select>
 
                 <ChevronDown
@@ -712,10 +853,13 @@ function Performance() {
 
         </div>
 
-        {/* DESKTOP TABLE */}
-        <div className="hidden overflow-x-auto lg:block">
+        {/* ===================================================
+            DESKTOP TABLE
+        =================================================== */}
 
-          <table className="w-full">
+        <div className="performance-table-scroll hidden overflow-x-auto lg:block">
+
+          <table className="w-full min-w-[980px]">
 
             <thead className="bg-slate-50">
 
@@ -763,11 +907,12 @@ function Performance() {
                 >
 
                   {/* EMPLOYEE */}
+
                   <td className="px-6 py-5">
 
                     <div className="flex items-center gap-3">
 
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">
                         {employee.initials}
                       </div>
 
@@ -788,6 +933,7 @@ function Performance() {
                   </td>
 
                   {/* DEPARTMENT */}
+
                   <td className="px-6 py-5">
 
                     <span className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">
@@ -797,13 +943,13 @@ function Performance() {
                   </td>
 
                   {/* SCORE */}
+
                   <td className="px-6 py-5">
-
                     <Score score={employee.score} />
-
                   </td>
 
                   {/* RATING */}
+
                   <td className="px-6 py-5">
 
                     <RatingBadge
@@ -813,6 +959,7 @@ function Performance() {
                   </td>
 
                   {/* GOALS */}
+
                   <td className="px-6 py-5">
 
                     <div>
@@ -830,6 +977,7 @@ function Performance() {
                   </td>
 
                   {/* REVIEW */}
+
                   <td className="px-6 py-5">
 
                     <ReviewBadge
@@ -839,20 +987,39 @@ function Performance() {
                   </td>
 
                   {/* ACTION */}
+
                   <td className="px-6 py-5">
 
                     <div className="flex justify-end gap-2">
 
                       <button
                         title="View Performance"
-                        className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition hover:bg-slate-50 hover:text-slate-700"
+                        className="
+                          flex h-9 w-9
+                          items-center justify-center
+                          rounded-lg
+                          border border-slate-200
+                          text-slate-400
+                          transition
+                          hover:bg-indigo-50
+                          hover:text-indigo-600
+                        "
                       >
                         <Eye size={16} />
                       </button>
 
                       <button
                         title="More"
-                        className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition hover:bg-slate-50 hover:text-slate-700"
+                        className="
+                          flex h-9 w-9
+                          items-center justify-center
+                          rounded-lg
+                          border border-slate-200
+                          text-slate-400
+                          transition
+                          hover:bg-slate-50
+                          hover:text-slate-700
+                        "
                       >
                         <MoreVertical size={16} />
                       </button>
@@ -871,7 +1038,10 @@ function Performance() {
 
         </div>
 
-        {/* MOBILE */}
+        {/* ===================================================
+            MOBILE CARDS
+        =================================================== */}
+
         <div className="divide-y divide-slate-100 lg:hidden">
 
           {filteredEmployees.map((employee) => (
@@ -881,11 +1051,13 @@ function Performance() {
               className="p-5"
             >
 
+              {/* EMPLOYEE HEADER */}
+
               <div className="flex items-start justify-between">
 
                 <div className="flex items-center gap-3">
 
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">
                     {employee.initials}
                   </div>
 
@@ -903,11 +1075,13 @@ function Performance() {
 
                 </div>
 
-                <span className="text-lg font-bold text-emerald-600">
+                <span className="text-lg font-bold text-indigo-600">
                   {employee.score}%
                 </span>
 
               </div>
+
+              {/* SCORE */}
 
               <div className="mt-5">
 
@@ -942,6 +1116,8 @@ function Performance() {
 
               </div>
 
+              {/* INFO GRID */}
+
               <div className="mt-4 grid grid-cols-2 gap-3">
 
                 <div className="rounded-xl bg-slate-50 p-3">
@@ -951,20 +1127,22 @@ function Performance() {
                   </p>
 
                   <div className="mt-1">
+
                     <RatingBadge
                       rating={employee.rating}
                     />
+
                   </div>
 
                 </div>
 
-                <div className="rounded-xl bg-blue-50 p-3">
+                <div className="rounded-xl bg-indigo-50 p-3">
 
-                  <p className="text-[10px] uppercase text-blue-500">
+                  <p className="text-[10px] uppercase text-indigo-500">
                     Goals
                   </p>
 
-                  <p className="mt-1 text-sm font-bold text-blue-700">
+                  <p className="mt-1 text-sm font-bold text-indigo-700">
                     {employee.completed}/{employee.totalGoals}
                   </p>
 
@@ -972,14 +1150,48 @@ function Performance() {
 
               </div>
 
+              {/* REVIEW */}
+
+              <div className="mt-3">
+
+                <ReviewBadge
+                  status={employee.reviews}
+                />
+
+              </div>
+
+              {/* ACTIONS */}
+
               <div className="mt-4 flex gap-2">
 
-                <button className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 py-2.5 text-xs font-semibold text-slate-600">
+                <button
+                  className="
+                    flex flex-1
+                    items-center justify-center gap-2
+                    rounded-xl
+                    border border-slate-200
+                    py-2.5
+                    text-xs font-semibold
+                    text-slate-600
+                    transition
+                    hover:bg-slate-50
+                  "
+                >
                   <Eye size={15} />
                   View Performance
                 </button>
 
-                <button className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500">
+                <button
+                  className="
+                    flex h-10 w-10
+                    items-center justify-center
+                    rounded-xl
+                    border border-slate-200
+                    text-slate-500
+                    transition
+                    hover:bg-slate-50
+                  "
+                >
                   <MoreVertical size={16} />
                 </button>
 
@@ -991,7 +1203,10 @@ function Performance() {
 
         </div>
 
-        {/* EMPTY */}
+        {/* ===================================================
+            EMPTY STATE
+        =================================================== */}
+
         {filteredEmployees.length === 0 && (
 
           <div className="p-16 text-center">
@@ -1014,42 +1229,45 @@ function Performance() {
 
       </div>
 
-      {/* INFO */}
-      <div className="mt-6 rounded-2xl border border-blue-100 bg-blue-50 p-5">
+      {/* =====================================================
+          INFORMATION CARD
+      ===================================================== */}
+
+      <div className="mt-6 rounded-2xl border border-indigo-100 bg-indigo-50 p-5">
 
         <div className="flex gap-4">
 
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
             <Award size={19} />
           </div>
 
           <div>
 
-            <h3 className="text-sm font-bold text-blue-900">
+            <h3 className="text-sm font-bold text-indigo-900">
               Performance Management
             </h3>
 
-            <p className="mt-1 text-xs leading-5 text-blue-700">
+            <p className="mt-1 text-xs leading-5 text-indigo-700">
               Track employee goals, performance scores, reviews
-              and development progress from one centralized HR
-              workspace.
+              and development progress from one centralized
+              Nexora HR workspace.
             </p>
 
             <div className="mt-3 flex flex-wrap gap-2">
 
-              <span className="rounded-lg bg-white px-3 py-1.5 text-[10px] font-medium text-blue-700">
+              <span className="rounded-lg bg-white px-3 py-1.5 text-[10px] font-medium text-indigo-700">
                 Performance Reviews
               </span>
 
-              <span className="rounded-lg bg-white px-3 py-1.5 text-[10px] font-medium text-blue-700">
+              <span className="rounded-lg bg-white px-3 py-1.5 text-[10px] font-medium text-indigo-700">
                 Employee Goals
               </span>
 
-              <span className="rounded-lg bg-white px-3 py-1.5 text-[10px] font-medium text-blue-700">
+              <span className="rounded-lg bg-white px-3 py-1.5 text-[10px] font-medium text-indigo-700">
                 Performance Score
               </span>
 
-              <span className="rounded-lg bg-white px-3 py-1.5 text-[10px] font-medium text-blue-700">
+              <span className="rounded-lg bg-white px-3 py-1.5 text-[10px] font-medium text-indigo-700">
                 Development Tracking
               </span>
 
@@ -1066,3 +1284,4 @@ function Performance() {
 }
 
 export default Performance;
+

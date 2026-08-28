@@ -47,8 +47,8 @@ function App() {
                 <Route path="/payroll" element={<Payroll />} />
                 <Route path="/departments" element={<Departments />} />
                 <Route path="/performance" element={<Performance />} />
-                <Route path="/documents" element={<div className="p-8 text-xl font-bold">Documents</div>} />
-                <Route path="/reports" element={<div className="p-8 text-xl font-bold">Reports</div>} />
+                <Route path="/documents" element={<div className="p-8"><h1 className="portal-heading text-xl font-bold">Documents</h1></div>} />
+                <Route path="/reports" element={<div className="p-8"><h1 className="portal-heading text-xl font-bold">Reports</h1></div>} />
                 <Route path="/settings" element={<Settings />} />
               </Routes>
             </main>
