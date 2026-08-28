@@ -113,7 +113,7 @@ function Dashboard() {
 
 
   return (
-    <div className="min-h-full bg-[#f6f8fc] p-5 lg:p-8 dark:bg-black">
+    <div className="dashboard-page min-h-full bg-[#f6f8fc] p-5 lg:p-8 dark:bg-black">
 
       {/* BACKGROUND */}
 
@@ -203,6 +203,7 @@ function Dashboard() {
                 key={stat.title}
                 className="
                   group
+                  portal-card
                   relative
                   overflow-hidden
                   rounded-2xl
@@ -343,6 +344,7 @@ function Dashboard() {
               key={label}
               className="
                 group
+                portal-card
                 flex
                 items-center
                 gap-3
@@ -412,6 +414,7 @@ function Dashboard() {
           <div
             className="
               rounded-2xl
+              portal-card
               border
               border-slate-200/80
               bg-white
@@ -581,6 +584,7 @@ function Dashboard() {
           <div
             className="
               rounded-2xl
+              portal-card
               border
               border-slate-200/80
               bg-white
@@ -690,7 +694,7 @@ function Dashboard() {
 
           {/* WORKFORCE */}
 
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+          <div className="portal-card rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
 
             <h3 className="text-sm font-bold text-slate-800">
               Workforce Summary
@@ -768,7 +772,7 @@ function Dashboard() {
 
           {/* EVENTS */}
 
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+          <div className="portal-card rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
 
             <div className="flex items-start justify-between">
 

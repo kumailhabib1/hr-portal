@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { NavLink } from "react-router-dom";
 
 import {
@@ -18,8 +17,7 @@ import {
   Sparkles,
 } from "lucide-react";
 
-function Sidebar({ collapsed, setCollapsed }) {
-  const [mobileOpen, setMobileOpen] = useState(false);
+function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) {
 
   const menuGroups = [
     {
@@ -180,37 +178,21 @@ function Sidebar({ collapsed, setCollapsed }) {
 
         <div className="relative flex h-[82px] shrink-0 items-center border-b border-white/[0.06] px-5">
 
-          <div
-            className="
-              flex
-              h-11
-              w-11
-              shrink-0
-              items-center
-              justify-center
-              rounded-2xl
-              bg-gradient-to-br
-              from-indigo-500
-              via-blue-500
-              to-violet-600
-              text-sm
-              font-black
-              shadow-lg
-              shadow-indigo-500/30
-            "
-          >
-            HR
-          </div>
+          <img
+            src="/logo/logo.png"
+            alt="Nexora HR logo"
+            className="h-12 w-12 shrink-0 rounded-xl object-cover object-[50%_22%] transition-all duration-300"
+          />
 
           {!collapsed && (
             <div className="ml-3 animate-fade-in">
 
               <h1 className="text-[15px] font-bold tracking-tight">
-                HR Portal
+                NEXORA HR
               </h1>
 
               <p className="mt-0.5 text-[10px] text-slate-500">
-                Management System
+                DIGITAL HR SYSTEM
               </p>
 
             </div>
@@ -241,7 +223,7 @@ function Sidebar({ collapsed, setCollapsed }) {
                   <NavLink
                     key={item.path}
                     to={item.path}
-                    end={item.path === "/dashboard"}
+                    end
                     onClick={() => setMobileOpen(false)}
                     className={({ isActive }) => `
                       group

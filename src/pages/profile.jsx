@@ -67,7 +67,7 @@ function Profile() {
 
         <section
           className="
-            relative mb-6 overflow-hidden
+            portal-card relative mb-6 overflow-hidden
             rounded-3xl border border-slate-200
             bg-white shadow-sm
           "
@@ -528,7 +528,7 @@ function StatCard({
   return (
     <div
       className="
-        group rounded-2xl border border-slate-200
+        group portal-card rounded-2xl border border-slate-200
         bg-white p-4 shadow-sm
         transition-all duration-300
         hover:-translate-y-1

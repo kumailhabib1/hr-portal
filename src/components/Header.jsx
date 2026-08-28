@@ -16,16 +16,39 @@ import {
   X,
 } from "lucide-react";
 
-import { useTheme } from "../context/ThemeContext";
+import { useTheme } from "../context/useTheme";
 
 function Header({ onMenuClick }) {
   const { darkMode, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const [profileOpen, setProfileOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [mobileSearch, setMobileSearch] = useState(false);
 
   const profileRef = useRef(null);
+  const notificationRef = useRef(null);
+
+  const notifications = [
+    {
+      title: "Leave request pending",
+      detail: "Ahmed Khan submitted a leave request.",
+      time: "10 min ago",
+      tone: "bg-amber-500",
+    },
+    {
+      title: "Payroll processed",
+      detail: "August payroll is ready for review.",
+      time: "1 hour ago",
+      tone: "bg-emerald-500",
+    },
+    {
+      title: "New employee added",
+      detail: "Sara Hassan joined the HR department.",
+      time: "Yesterday",
+      tone: "bg-blue-500",
+    },
+  ];
 
   /* =====================================
      CLOSE PROFILE WHEN CLICKING OUTSIDE
@@ -38,6 +61,13 @@ function Header({ onMenuClick }) {
         !profileRef.current.contains(event.target)
       ) {
         setProfileOpen(false);
+      }
+
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(event.target)
+      ) {
+        setNotificationsOpen(false);
       }
     };
 
@@ -561,9 +591,13 @@ function Header({ onMenuClick }) {
                 NOTIFICATION
             ================================= */}
 
-            <button
-              aria-label="Notifications"
-              className="
+            <div ref={notificationRef} className="relative">
+              <button
+                type="button"
+                aria-label="Notifications"
+                aria-expanded={notificationsOpen}
+                onClick={() => setNotificationsOpen((open) => !open)}
+                className="
                 group
                 relative
                 flex
@@ -600,7 +634,7 @@ function Header({ onMenuClick }) {
                 dark:hover:bg-blue-950/50
                 dark:hover:text-blue-400
               "
-            >
+              >
 
               <Bell
                 className="
@@ -657,7 +691,49 @@ function Header({ onMenuClick }) {
                 />
               </span>
 
-            </button>
+              </button>
+
+              {notificationsOpen && (
+                <div
+                  className="absolute right-0 top-[58px] z-50 w-[min(360px,calc(100vw-2rem))] origin-top-right animate-[profileDrop_.25s_ease-out] rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-2xl shadow-slate-300/30 backdrop-blur-xl dark:border-slate-700 dark:bg-slate-900/95 dark:shadow-black/50"
+                  role="dialog"
+                  aria-label="Notifications"
+                >
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <div>
+                      <h2 className="text-sm font-bold text-slate-900 dark:text-white">Notifications</h2>
+                      <p className="mt-0.5 text-[10px] text-slate-400">You have {notifications.length} new updates</p>
+                    </div>
+                    <span className="rounded-full bg-blue-500/10 px-2 py-1 text-[10px] font-bold text-blue-600 dark:text-blue-400">NEW</span>
+                  </div>
+
+                  <div className="mt-1 divide-y divide-slate-100 dark:divide-slate-800">
+                    {notifications.map((notification) => (
+                      <button
+                        type="button"
+                        key={notification.title}
+                        className="flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/70"
+                      >
+                        <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${notification.tone}`} />
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-xs font-bold text-slate-800 dark:text-slate-100">{notification.title}</span>
+                          <span className="mt-1 block text-[11px] text-slate-500 dark:text-slate-400">{notification.detail}</span>
+                          <span className="mt-1.5 block text-[10px] text-slate-400">{notification.time}</span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setNotificationsOpen(false)}
+                    className="mt-1 w-full rounded-xl px-3 py-2.5 text-center text-[11px] font-bold text-blue-600 transition hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/40"
+                  >
+                    Mark all as read
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* =================================
                 PROFILE

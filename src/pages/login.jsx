@@ -157,41 +157,16 @@ function Login() {
 
             <div className="flex items-center gap-3">
 
-              <div
-                className="
-                  flex
-                  h-12
-                  w-12
-                  items-center
-                  justify-center
-
-                  rounded-xl
-
-                  bg-gradient-to-br
-                  from-blue-500
-                  via-indigo-600
-                  to-violet-600
-
-                  text-sm
-                  font-black
-
-                  shadow-xl
-                  shadow-blue-900/30
-
-                  transition-all
-                  duration-500
-
-                  hover:scale-105
-                  hover:rotate-3
-                "
-              >
-                HR
-              </div>
+              <img
+                src="/logo/logo.png"
+                alt="Nexora HR logo"
+                className="h-12 w-12 shrink-0 rounded-xl object-cover object-[50%_22%] shadow-xl shadow-blue-900/30 transition-all duration-500 hover:scale-105 hover:rotate-3"
+              />
 
               <div>
 
                 <h2 className="text-lg font-bold">
-                  HR Portal
+                  NEXORA HR
                 </h2>
 
                 <p className="text-[10px] text-slate-500">
@@ -493,35 +468,14 @@ function Login() {
 
             <div className="mb-8 text-center lg:hidden">
 
-              <div
-                className="
-                  mx-auto
-                  mb-4
-                  flex
-                  h-16
-                  w-16
-                  items-center
-                  justify-center
-
-                  rounded-2xl
-
-                  bg-gradient-to-br
-                  from-blue-500
-                  via-indigo-600
-                  to-violet-600
-
-                  text-lg
-                  font-black
-
-                  shadow-xl
-                  shadow-blue-900/30
-                "
-              >
-                HR
-              </div>
+              <img
+                src="/logo/logo.png"
+                alt="Nexora HR logo"
+                className="mx-auto mb-4 h-16 w-16 rounded-2xl object-cover object-[50%_22%] shadow-xl shadow-blue-900/30"
+              />
 
               <h1 className="text-2xl font-bold">
-                HR Portal
+                NEXORA HR
               </h1>
 
               <p className="mt-1 text-xs text-slate-500">
@@ -1036,7 +990,7 @@ function Login() {
                 text-slate-600
               "
             >
-              © 2026 HR Portal · All rights reserved
+                  © 2026 NEXORA HR · All rights reserved
             </p>
 
           </div>

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowUpRight, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowUpRight, Sparkles } from "lucide-react";
 
 function SplashScreen() {
   const navigate = useNavigate();
@@ -24,9 +24,7 @@ function SplashScreen() {
         <div className="relative mb-8 h-28 w-28 animate-[splashLogo_700ms_ease-out_both]">
           <div className="absolute inset-0 rounded-[2rem] border border-blue-400/20 animate-[spin_12s_linear_infinite]" />
           <div className="absolute inset-3 rounded-[1.6rem] border border-violet-400/30 animate-[spin_8s_linear_infinite_reverse]" />
-          <div className="absolute inset-5 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 via-indigo-600 to-violet-600 shadow-2xl shadow-indigo-900/50">
-            <ShieldCheck className="h-9 w-9" />
-          </div>
+          <img src="/logo/logo.png" alt="Nexora HR logo" className="absolute inset-5 h-18 w-18 rounded-2xl object-cover object-[50%_22%] shadow-2xl shadow-indigo-900/50" />
           <Sparkles className="absolute -right-1 top-2 h-4 w-4 text-blue-300 animate-pulse" />
           <ArrowUpRight className="absolute -bottom-1 left-1 h-4 w-4 text-violet-300 animate-pulse" />
         </div>
@@ -37,7 +35,7 @@ function SplashScreen() {
           <span className="h-px w-7 bg-blue-400/60" />
         </p>
         <h1 className="text-4xl font-black tracking-tight animate-[splashContent_700ms_150ms_ease-out_both] sm:text-5xl">
-          HR Portal
+          NEXORA HR
         </h1>
         <p className="mt-3 text-sm text-slate-400 animate-[splashContent_700ms_250ms_ease-out_both]">
           A smarter way to manage your people

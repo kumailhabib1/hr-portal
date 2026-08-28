@@ -12,7 +12,8 @@ import {
   ShieldCheck,
   UserRound,
 } from "lucide-react";
-import { useTheme } from "../context/ThemeContext";
+import { useTheme } from "../context/useTheme";
+import Card from "../components/Card";
 
 function Settings() {
   const { darkMode, toggleTheme } = useTheme();
@@ -46,7 +47,7 @@ function Settings() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
-          <nav className="h-fit rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-[#09090b]">
+          <nav className="portal-card h-fit p-2">
             <SettingsNav icon={<UserRound />} label="Account" active />
             <SettingsNav icon={<Palette />} label="Appearance" />
             <SettingsNav icon={<Bell />} label="Notifications" />
@@ -116,7 +117,7 @@ function SettingsNav({ icon, label, active }) {
 
 function SettingsCard({ icon, title, subtitle, children }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-[#09090b] sm:p-6">
+    <Card as="section" className="p-5 sm:p-6">
       <div className="mb-6 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-300">{icon}</div>
         <div>
@@ -125,7 +126,7 @@ function SettingsCard({ icon, title, subtitle, children }) {
         </div>
       </div>
       {children}
-    </section>
+    </Card>
   );
 }
 
