@@ -15,6 +15,8 @@ import LeaveManagement from "./pages/LeaveManagement";
 import Payroll from "./pages/Payroll";
 import Departments from "./pages/Departments";
 import Performance from "./pages/Performance";
+import Documents from   "./pages/Documents";
+import Reports from "./pages/Reports";
 
 
 function App() {
@@ -47,9 +49,9 @@ function App() {
                 <Route path="/payroll" element={<Payroll />} />
                 <Route path="/departments" element={<Departments />} />
                 <Route path="/performance" element={<Performance />} />
-                <Route path="/documents" element={<div className="p-8"><h1 className="portal-heading text-xl font-bold">Documents</h1></div>} />
-                <Route path="/reports" element={<div className="p-8"><h1 className="portal-heading text-xl font-bold">Reports</h1></div>} />
+                <Route path="/reports" element={<Reports />} />
                 <Route path="/settings" element={<Settings />} />
+                <Route path="/documents" element={<Documents />} />
               </Routes>
             </main>
           </div>

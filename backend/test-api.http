@@ -1,0 +1,12 @@
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@hrportal.com",
+  "password": "Admin@123"
+}
+
+###3
+
+GET http://localhost:5000/api/auth/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkFkbWluIiwiZW1wbG95ZWVfaWQiOm51bGwsImlhdCI6MTc4ODk0ODEyNCwiZXhwIjoxNzg5NTUyOTI0fQ.XdkRYntOUR310crTt15GKSksiPOIfJTSIpZ7OWcN4jk

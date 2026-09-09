@@ -12,7 +12,6 @@ import {
   CheckCircle2,
   Clock3,
   AlertCircle,
-  ClipboardCheck,
   BarChart3,
 } from "lucide-react";
 

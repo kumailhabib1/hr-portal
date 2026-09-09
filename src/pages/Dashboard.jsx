@@ -135,7 +135,7 @@ function Dashboard() {
 
           <div>
 
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-indigo-500">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.15em] text-indigo-500">
               HR Management
             </p>
 
@@ -143,7 +143,7 @@ function Dashboard() {
               Dashboard
             </h1>
 
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="mt-2 text-sm text-slate-500">
               Overview of your organization's workforce and performance.
             </p>
 
@@ -163,7 +163,7 @@ function Dashboard() {
               to-violet-600
               px-5
               py-3
-              text-xs
+              text-sm
               font-bold
               text-white
               shadow-lg
@@ -273,7 +273,7 @@ function Dashboard() {
                   </div>
 
 
-                  <p className="text-[10px] font-medium text-slate-400">
+                  <p className="text-xs font-medium text-slate-400">
                     {stat.title}
                   </p>
 
@@ -292,7 +292,7 @@ function Dashboard() {
                         rounded-md
                         px-1.5
                         py-1
-                        text-[9px]
+                        text-[11px]
                         font-bold
 
                         ${
@@ -316,7 +316,7 @@ function Dashboard() {
                   </div>
 
 
-                  <p className="mt-1 text-[9px] text-slate-400">
+                  <p className="mt-1 text-[11px] text-slate-400">
                     {stat.text}
                   </p>
 
@@ -387,11 +387,11 @@ function Dashboard() {
 
               <div>
 
-                <p className="text-[9px] text-slate-400">
+                <p className="text-[11px] text-slate-400">
                   {label}
                 </p>
 
-                <strong className="text-xs font-bold text-slate-800">
+                <strong className="text-sm font-bold text-slate-800">
                   {value}
                 </strong>
 
@@ -433,7 +433,7 @@ function Dashboard() {
                     Attendance Overview
                   </h3>
 
-                  <span className="flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[7px] font-bold text-emerald-600">
+                  <span className="flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[9px] font-bold text-emerald-600">
 
                     <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
 
@@ -443,7 +443,7 @@ function Dashboard() {
 
                 </div>
 
-                <p className="mt-1 text-[9px] text-slate-400">
+                <p className="mt-1 text-[11px] text-slate-400">
                   Employee attendance this week
                 </p>
 
@@ -458,7 +458,7 @@ function Dashboard() {
                   bg-slate-50
                   px-2
                   py-1.5
-                  text-[9px]
+                  text-[11px]
                   text-slate-500
                   outline-none
                   focus:border-indigo-300
@@ -475,19 +475,19 @@ function Dashboard() {
 
             <div className="mt-5 flex gap-5">
 
-              <div className="flex items-center gap-1.5 text-[9px] text-slate-400">
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
                 <span className="h-2 w-2 rounded-full bg-indigo-500" />
                 Present
                 <strong className="text-slate-700">218</strong>
               </div>
 
-              <div className="flex items-center gap-1.5 text-[9px] text-slate-400">
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
                 <span className="h-2 w-2 rounded-full bg-red-400" />
                 Absent
                 <strong className="text-slate-700">20</strong>
               </div>
 
-              <div className="flex items-center gap-1.5 text-[9px] text-slate-400">
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
                 <span className="h-2 w-2 rounded-full bg-amber-400" />
                 Leave
                 <strong className="text-slate-700">12</strong>
@@ -500,7 +500,7 @@ function Dashboard() {
 
             <div className="mt-6 flex h-60">
 
-              <div className="flex flex-col justify-between pb-5 pr-3 text-[8px] text-slate-300">
+              <div className="flex flex-col justify-between pb-5 pr-3 text-[10px] text-slate-300">
 
                 <span>250</span>
                 <span>200</span>
@@ -566,7 +566,7 @@ function Dashboard() {
             </div>
 
 
-            <div className="ml-8 flex justify-around text-[8px] text-slate-400">
+            <div className="ml-8 flex justify-around text-[10px] text-slate-400">
 
               {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(
                 (day) => (
@@ -601,7 +601,7 @@ function Dashboard() {
                   Recent Employees
                 </h3>
 
-                <p className="mt-1 text-[9px] text-slate-400">
+                <p className="mt-1 text-[11px] text-slate-400">
                   Recently added employees
                 </p>
 
@@ -609,7 +609,7 @@ function Dashboard() {
 
               <a
                 href="/employees"
-                className="flex items-center gap-1 text-[9px] font-bold text-indigo-600 hover:text-indigo-800"
+                className="flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-800"
               >
                 View All
                 <ArrowUpRight size={12} />
@@ -647,7 +647,7 @@ function Dashboard() {
                       rounded-xl
                       bg-gradient-to-br
                       ${employee.gradient}
-                      text-[9px]
+                      text-[11px]
                       font-bold
                       text-white
                       shadow-md
@@ -661,18 +661,18 @@ function Dashboard() {
 
                   <div className="min-w-0 flex-1">
 
-                    <strong className="block truncate text-[10px] font-bold text-slate-700">
+                    <strong className="block truncate text-xs font-bold text-slate-700">
                       {employee.name}
                     </strong>
 
-                    <span className="mt-0.5 block truncate text-[8px] text-slate-400">
+                    <span className="mt-0.5 block truncate text-[10px] text-slate-400">
                       {employee.role}
                     </span>
 
                   </div>
 
 
-                  <span className="text-[8px] text-slate-400">
+                  <span className="text-[10px] text-slate-400">
                     {employee.time}
                   </span>
 
@@ -700,7 +700,7 @@ function Dashboard() {
               Workforce Summary
             </h3>
 
-            <p className="mt-1 text-[9px] text-slate-400">
+              <p className="mt-1 text-[11px] text-slate-400">
               Current employee distribution
             </p>
 
@@ -727,7 +727,7 @@ function Dashboard() {
                     250
                   </strong>
 
-                  <span className="text-[7px] text-slate-400">
+                  <span className="text-[9px] text-slate-400">
                     Employees
                   </span>
 
@@ -751,11 +751,11 @@ function Dashboard() {
 
                     <span className={`h-2 w-2 rounded-full ${dot}`} />
 
-                    <span className="text-[9px] text-slate-500">
+                    <span className="text-[11px] text-slate-500">
                       {label}
                     </span>
 
-                    <strong className="text-[9px] text-slate-800">
+                    <strong className="text-[11px] text-slate-800">
                       {value}
                     </strong>
 
@@ -782,13 +782,13 @@ function Dashboard() {
                   Upcoming Events
                 </h3>
 
-                <p className="mt-1 text-[9px] text-slate-400">
+                <p className="mt-1 text-[11px] text-slate-400">
                   Important HR activities
                 </p>
 
               </div>
 
-              <button className="text-[9px] font-bold text-indigo-600">
+              <button className="text-[11px] font-bold text-indigo-600">
                 Calendar
               </button>
 
@@ -819,11 +819,11 @@ function Dashboard() {
 
                   <div className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
 
-                    <strong className="text-xs">
+                    <strong className="text-sm">
                       {date}
                     </strong>
 
-                    <span className="text-[6px] font-bold">
+                    <span className="text-[8px] font-bold">
                       {month}
                     </span>
 
@@ -832,11 +832,11 @@ function Dashboard() {
 
                   <div>
 
-                    <strong className="block text-[9px] font-bold text-slate-700">
+                    <strong className="block text-[11px] font-bold text-slate-700">
                       {title}
                     </strong>
 
-                    <span className="mt-1 block text-[7px] text-slate-400">
+                    <span className="mt-1 block text-[9px] text-slate-400">
                       {description}
                     </span>
 

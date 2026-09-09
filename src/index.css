@@ -4,6 +4,208 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ================================
+   REPORTS / DOCUMENTS COMMON UI
+================================ */
+
+.shared-page-action-button {
+  border: 1px solid #34d399;
+  box-shadow: 0 12px 30px rgba(16,185,129,0.12);
+}
+
+.shared-page-action-button {
+  border-color: #10b981;
+  background: #059669;
+  color: #ffffff;
+}
+
+.shared-page-action-button:hover {
+  background: #047857;
+  color: #ffffff;
+}
+
+.shared-icon-button {
+  border: 1px solid transparent;
+  background: transparent;
+  color: #64748b;
+}
+
+.shared-icon-button:hover {
+  background: #f8fafc;
+  color: #059669;
+}
+
+.documents-page .shared-icon-button,
+.reports-page .shared-icon-button {
+  border-color: #e2e8f0;
+}
+
+.document-page-button,
+.report-page-button {
+  min-width: 150px;
+}
+
+.page-secondary-button {
+  background: #ffffff;
+  color: #475569;
+}
+
+html.dark .page-secondary-button {
+  background: #111827;
+  color: #e2e8f0;
+  border-color: #334155;
+}
+
+html.dark .documents-page .shared-icon-button,
+html.dark .reports-page .shared-icon-button {
+  background: #111827;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+html.dark .documents-page .shared-icon-button:hover,
+html.dark .reports-page .shared-icon-button:hover {
+  background: #1e293b;
+  color: #6ee7b7;
+}
+
+html.dark .documents-page,
+html.dark .reports-page {
+  background: #080d18 !important;
+  color: #e2e8f0;
+}
+
+html.dark .documents-page .bg-white,
+html.dark .documents-page .bg-slate-50,
+html.dark .reports-page .bg-white,
+html.dark .reports-page .bg-slate-50 {
+  background-color: #111827 !important;
+}
+
+html.dark .documents-page .border-slate-200,
+html.dark .documents-page .border-slate-100,
+html.dark .reports-page .border-slate-200,
+html.dark .reports-page .border-slate-100 {
+  border-color: #243047 !important;
+}
+
+html.dark .documents-page .text-slate-900,
+html.dark .documents-page .text-slate-800,
+html.dark .documents-page .text-slate-700,
+html.dark .reports-page .text-slate-900,
+html.dark .reports-page .text-slate-800,
+html.dark .reports-page .text-slate-700 {
+  color: #f8fafc !important;
+}
+
+html.dark .documents-page .text-slate-600,
+html.dark .documents-page .text-slate-500,
+html.dark .documents-page .text-slate-400,
+html.dark .reports-page .text-slate-600,
+html.dark .reports-page .text-slate-500,
+html.dark .reports-page .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+html.dark .documents-page .bg-slate-100,
+html.dark .documents-page .bg-slate-50,
+html.dark .reports-page .bg-slate-100,
+html.dark .reports-page .bg-slate-50 {
+  background-color: #182337 !important;
+}
+
+html.dark .reports-page .report-card-create-button {
+  color: #6ee7b7 !important;
+}
+
+html.dark .documents-page .documents-mobile-action-button {
+  background: #111827;
+  color: #e2e8f0;
+  border-color: #334155;
+}
+
+html.dark .documents-page .documents-mobile-action-button:hover {
+  background: #022c22;
+  color: #6ee7b7;
+}
+
+html.dark .documents-page .documents-mobile-delete-button {
+  background: #111827;
+  color: #fca5a5;
+}
+
+.documents-scroll,
+.documents-table-scroll,
+.reports-table-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 transparent;
+}
+
+.documents-scroll::-webkit-scrollbar,
+.documents-table-scroll::-webkit-scrollbar,
+.reports-table-scroll::-webkit-scrollbar {
+  height: 7px;
+  width: 7px;
+}
+
+.documents-scroll::-webkit-scrollbar-track,
+.documents-table-scroll::-webkit-scrollbar-track,
+.reports-table-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.documents-scroll::-webkit-scrollbar-thumb,
+.documents-table-scroll::-webkit-scrollbar-thumb,
+.reports-table-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  background-color: #94a3b8;
+}
+
+.documents-scroll::-webkit-scrollbar-thumb:hover,
+.documents-table-scroll::-webkit-scrollbar-thumb:hover,
+.reports-table-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #64748b;
+}
+
+html.dark .documents-scroll,
+html.dark .documents-table-scroll,
+html.dark .reports-table-scroll {
+  scrollbar-color: #475569 transparent;
+}
+
+html.dark .documents-scroll::-webkit-scrollbar-thumb,
+html.dark .documents-table-scroll::-webkit-scrollbar-thumb,
+html.dark .reports-table-scroll::-webkit-scrollbar-thumb {
+  background-color: #475569;
+}
+
+html.dark .documents-scroll::-webkit-scrollbar-thumb:hover,
+html.dark .documents-table-scroll::-webkit-scrollbar-thumb:hover,
+html.dark .reports-table-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #64748b;
+}
+
+.documents-mobile-action-button {
+  background: #ffffff;
+  color: #475569;
+  border-color: #e2e8f0;
+  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+
+.documents-mobile-action-button:hover {
+  background: #eefcf6;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+
+.documents-mobile-delete-button {
+  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease;
+}
+
+/* ================================
    GLOBAL
 ================================ */
 
