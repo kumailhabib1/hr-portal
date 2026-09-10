@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   UserPlus,
   Upload,
@@ -19,21 +19,19 @@ import {
   ArrowRight,
   MapPinned,
   Users,
-  Banknote,
   FileCheck2,
+  AlertCircle,
+  CheckCircle2,
+  Loader2,
+  Trash2,
 } from "lucide-react";
 
-const departments = [
-  "Engineering",
-  "Human Resources",
-  "Marketing",
-  "Finance",
-  "Operations",
-  "Design",
-  "IT",
-  "Sales",
-  "Administration",
-];
+const API_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+/* =========================================================
+   POSITION LIST
+========================================================= */
 
 const positions = {
   Engineering: [
@@ -44,44 +42,52 @@ const positions = {
     "Full Stack Developer",
     "DevOps Engineer",
   ],
+
   "Human Resources": [
     "HR Executive",
     "HR Manager",
     "Recruitment Officer",
     "HR Assistant",
   ],
+
   Marketing: [
     "Marketing Executive",
     "Marketing Manager",
     "Digital Marketing Specialist",
     "Content Writer",
   ],
+
   Finance: [
     "Accountant",
     "Financial Analyst",
     "Finance Manager",
     "Accounts Executive",
   ],
+
   Operations: [
     "Operations Executive",
     "Operations Manager",
     "Operations Assistant",
   ],
+
   Design: [
     "UI/UX Designer",
     "Graphic Designer",
     "Product Designer",
   ],
+
   IT: [
     "IT Support Engineer",
     "System Administrator",
     "IT Manager",
   ],
+
   Sales: [
     "Sales Executive",
     "Sales Manager",
     "Business Development Executive",
   ],
+
   Administration: [
     "Admin Officer",
     "Office Manager",
@@ -89,13 +95,9 @@ const positions = {
   ],
 };
 
-const managers = [
-  "Ahmed Khan",
-  "Sara Hassan",
-  "Muhammad Ali",
-  "Usman Ahmed",
-  "Ayesha Malik",
-];
+/* =========================================================
+   SKILLS
+========================================================= */
 
 const availableSkills = [
   "Communication",
@@ -108,7 +110,38 @@ const availableSkills = [
   "Project Management",
 ];
 
-function SectionHeader({ icon: Icon, title, description }) {
+/* =========================================================
+   DOCUMENT TYPES
+========================================================= */
+
+const documentTypes = [
+  {
+    key: "cnic",
+    label: "CNIC / National ID",
+  },
+  {
+    key: "resume",
+    label: "Resume / CV",
+  },
+  {
+    key: "education",
+    label: "Educational Certificate",
+  },
+  {
+    key: "contract",
+    label: "Employment Contract",
+  },
+];
+
+/* =========================================================
+   SECTION HEADER
+========================================================= */
+
+function SectionHeader({
+  icon: Icon,
+  title,
+  description,
+}) {
   return (
     <div className="mb-7 flex items-start gap-4">
       <div className="relative shrink-0">
@@ -132,6 +165,10 @@ function SectionHeader({ icon: Icon, title, description }) {
   );
 }
 
+/* =========================================================
+   FIELD
+========================================================= */
+
 function Field({
   label,
   required = false,
@@ -152,6 +189,10 @@ function Field({
     </div>
   );
 }
+
+/* =========================================================
+   INPUT
+========================================================= */
 
 function Input({ icon: Icon, ...props }) {
   return (
@@ -175,6 +216,10 @@ function Input({ icon: Icon, ...props }) {
     </div>
   );
 }
+
+/* =========================================================
+   SELECT
+========================================================= */
 
 function Select({
   icon: Icon,
@@ -207,19 +252,348 @@ function Select({
   );
 }
 
+/* =========================================================
+   DOCUMENT UPLOAD CARD
+========================================================= */
+
+function DocumentCard({
+  label,
+  file,
+  onSelect,
+  onRemove,
+}) {
+  return (
+    <div className="group/doc relative overflow-hidden rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 p-6 text-center transition-all duration-300 hover:-translate-y-1 hover:border-blue-400 hover:bg-blue-50 dark:border-white/10 dark:bg-white/[0.025]">
+      {!file ? (
+        <label className="flex cursor-pointer flex-col items-center justify-center">
+          <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-white text-slate-400 shadow-sm transition-all duration-300 group-hover/doc:scale-110 group-hover/doc:text-blue-500 dark:bg-white/5">
+            <FileCheck2 size={20} />
+          </div>
+
+          <span className="mt-4 text-[11px] font-bold text-slate-600 dark:text-slate-300">
+            {label}
+          </span>
+
+          <span className="mt-1 text-[9px] text-slate-400">
+            PDF, JPG, PNG, DOC or DOCX
+          </span>
+
+          <span className="mt-2 inline-flex items-center gap-1 rounded-lg bg-blue-50 px-2.5 py-1.5 text-[9px] font-bold text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
+            <Upload size={11} />
+            Choose File
+          </span>
+
+          <input
+            type="file"
+            className="hidden"
+            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+            onChange={(event) => {
+              onSelect(event.target.files?.[0]);
+              event.target.value = "";
+            }}
+          />
+        </label>
+      ) : (
+        <div className="flex flex-col items-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10">
+            <CheckCircle2 size={21} />
+          </div>
+
+          <p className="mt-3 max-w-full truncate px-2 text-[11px] font-bold text-slate-700 dark:text-slate-200">
+            {file.name}
+          </p>
+
+          <p className="mt-1 text-[9px] text-slate-400">
+            {(file.size / 1024 / 1024).toFixed(2)} MB
+          </p>
+
+          <button
+            type="button"
+            onClick={onRemove}
+            className="mt-3 inline-flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1.5 text-[9px] font-bold text-red-500 transition hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400"
+          >
+            <Trash2 size={11} />
+            Remove
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* =========================================================
+   ADD EMPLOYEE
+========================================================= */
+
 function AddEmployee() {
   const fileInputRef = useRef(null);
 
+  /* -------------------------------------------------------
+     PHOTO
+  ------------------------------------------------------- */
+
   const [photo, setPhoto] = useState(null);
-  const [department, setDepartment] = useState("");
-  const [position, setPosition] = useState("");
-  const [sameAddress, setSameAddress] = useState(false);
+
+  /* -------------------------------------------------------
+     DEPARTMENTS / EMPLOYEES
+  ------------------------------------------------------- */
+
+  const [departments, setDepartments] = useState([]);
+  const [employees, setEmployees] = useState([]);
+
+  const [loadingDepartments, setLoadingDepartments] =
+    useState(true);
+
+  const [loadingManagers, setLoadingManagers] =
+    useState(true);
+
+  /* -------------------------------------------------------
+     FORM STATUS
+  ------------------------------------------------------- */
+
+  const [isSubmitting, setIsSubmitting] =
+    useState(false);
+
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  /* -------------------------------------------------------
+     FORM
+  ------------------------------------------------------- */
+
+  const [form, setForm] = useState({
+    employee_code: "",
+    first_name: "",
+    last_name: "",
+    date_of_birth: "",
+    gender: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    country: "Pakistan",
+    department_id: "",
+    position: "",
+    manager_id: "",
+    joining_date: "",
+    employment_type: "",
+    salary: "",
+    emergency_contact_name: "",
+    emergency_contact_phone: "",
+    status: "Active",
+  });
+
+  /* -------------------------------------------------------
+     OTHER UI STATES
+  ------------------------------------------------------- */
+
+  const [sameAddress, setSameAddress] =
+    useState(false);
+
   const [skills, setSkills] = useState([]);
+
+  /* -------------------------------------------------------
+     DOCUMENT STATES
+  ------------------------------------------------------- */
+
+  const [documents, setDocuments] = useState({
+    cnic: null,
+    resume: null,
+    education: null,
+    contract: null,
+  });
+
+  /* =======================================================
+     AUTH TOKEN
+  ======================================================= */
+
+  const getToken = () => {
+    return (
+      localStorage.getItem("token") ||
+      sessionStorage.getItem("token")
+    );
+  };
+
+  /* =======================================================
+     LOAD DEPARTMENTS
+  ======================================================= */
+
+  useEffect(() => {
+    const loadDepartments = async () => {
+      try {
+        setLoadingDepartments(true);
+
+        const token = getToken();
+
+        if (!token) {
+          setError("Please login again.");
+          return;
+        }
+
+        const response = await fetch(
+          `${API_URL}/api/departments`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(
+            data.message ||
+              "Failed to load departments"
+          );
+        }
+
+        setDepartments(data.departments || []);
+      } catch (err) {
+        console.error(
+          "Department loading error:",
+          err
+        );
+
+        setError(
+          err.message ||
+            "Failed to load departments."
+        );
+      } finally {
+        setLoadingDepartments(false);
+      }
+    };
+
+    loadDepartments();
+  }, []);
+
+  /* =======================================================
+     LOAD EMPLOYEES / MANAGERS
+  ======================================================= */
+
+  useEffect(() => {
+    const loadEmployees = async () => {
+      try {
+        setLoadingManagers(true);
+
+        const token = getToken();
+
+        if (!token) return;
+
+        const response = await fetch(
+          `${API_URL}/api/employees`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(
+            data.message ||
+              "Failed to load employees"
+          );
+        }
+
+        setEmployees(data.employees || []);
+      } catch (err) {
+        console.error(
+          "Manager loading error:",
+          err
+        );
+      } finally {
+        setLoadingManagers(false);
+      }
+    };
+
+    loadEmployees();
+  }, []);
+
+  /* =======================================================
+     FORM CHANGE
+  ======================================================= */
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+
+    setForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+
+    setError("");
+    setSuccess("");
+  };
+
+  /* =======================================================
+     DEPARTMENT CHANGE
+  ======================================================= */
+
+  const handleDepartmentChange = (event) => {
+    const value = event.target.value;
+
+    setForm((current) => ({
+      ...current,
+      department_id: value,
+      position: "",
+      manager_id: "",
+    }));
+
+    setError("");
+    setSuccess("");
+  };
+
+  /* =======================================================
+     POSITION CHANGE
+  ======================================================= */
+
+  const handlePositionChange = (event) => {
+    const value = event.target.value;
+
+    setForm((current) => ({
+      ...current,
+      position: value,
+    }));
+
+    setError("");
+    setSuccess("");
+  };
+
+  /* =======================================================
+     PHOTO
+  ======================================================= */
 
   const handlePhoto = (event) => {
     const file = event.target.files?.[0];
 
     if (!file) return;
+
+    if (
+      !["image/jpeg", "image/png"].includes(
+        file.type
+      )
+    ) {
+      setError(
+        "Only JPG and PNG images are allowed."
+      );
+
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError(
+        "Profile photo must be less than 5MB."
+      );
+
+      return;
+    }
+
+    if (photo?.url) {
+      URL.revokeObjectURL(photo.url);
+    }
 
     const imageUrl = URL.createObjectURL(file);
 
@@ -227,23 +601,593 @@ function AddEmployee() {
       file,
       url: imageUrl,
     });
+
+    setError("");
+    setSuccess("");
   };
+
+  /* =======================================================
+     DOCUMENT SELECT
+  ======================================================= */
+
+  const handleDocumentSelect = (type, file) => {
+    if (!file) return;
+
+    const allowedExtensions = [
+      "pdf",
+      "jpg",
+      "jpeg",
+      "png",
+      "doc",
+      "docx",
+    ];
+
+    const extension =
+      file.name.split(".").pop()?.toLowerCase();
+
+    if (
+      !extension ||
+      !allowedExtensions.includes(extension)
+    ) {
+      setError(
+        "Only PDF, JPG, PNG, DOC and DOCX documents are allowed."
+      );
+
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setError(
+        "Document size must be less than 10MB."
+      );
+
+      return;
+    }
+
+    setDocuments((current) => ({
+      ...current,
+      [type]: file,
+    }));
+
+    setError("");
+    setSuccess("");
+  };
+
+  /* =======================================================
+     REMOVE DOCUMENT
+  ======================================================= */
+
+  const removeDocument = (type) => {
+    setDocuments((current) => ({
+      ...current,
+      [type]: null,
+    }));
+
+    setError("");
+  };
+
+  /* =======================================================
+     SKILLS
+  ======================================================= */
 
   const toggleSkill = (skill) => {
     setSkills((current) =>
       current.includes(skill)
-        ? current.filter((item) => item !== skill)
+        ? current.filter(
+            (item) => item !== skill
+          )
         : [...current, skill]
     );
   };
 
+  /* =======================================================
+     GENERATE EMPLOYEE CODE
+  ======================================================= */
+
+  const generateEmployeeCode = () => {
+    if (employees.length === 0) {
+      return "EMP-001";
+    }
+
+    const numbers = employees
+      .map((employee) => {
+        const match =
+          employee.employee_code?.match(
+            /(\d+)$/
+          );
+
+        return match
+          ? Number(match[1])
+          : 0;
+      })
+      .filter(Boolean);
+
+    const highest =
+      numbers.length > 0
+        ? Math.max(...numbers)
+        : 0;
+
+    return `EMP-${String(
+      highest + 1
+    ).padStart(3, "0")}`;
+  };
+
+  /* =======================================================
+     UPLOAD DOCUMENTS
+  ======================================================= */
+
+  const uploadEmployeeDocuments = async (
+    employeeId,
+    token
+  ) => {
+    const selectedDocuments =
+      Object.entries(documents).filter(
+        ([, file]) => file
+      );
+
+    if (
+      selectedDocuments.length === 0
+    ) {
+      return {
+        success: true,
+        uploaded: 0,
+      };
+    }
+
+    const formData = new FormData();
+
+    selectedDocuments.forEach(
+      ([type, file], index) => {
+        formData.append(
+          "documents",
+          file
+        );
+
+        formData.append(
+          `document_type_${index}`,
+          getDocumentType(type)
+        );
+      }
+    );
+
+    const response = await fetch(
+      `${API_URL}/api/documents/employee/${employeeId}`,
+      {
+        method: "POST",
+
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+
+        body: formData,
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(
+        data.message ||
+          "Employee created but document upload failed."
+      );
+    }
+
+    return data;
+  };
+
+  /* =======================================================
+     DOCUMENT TYPE NAME
+  ======================================================= */
+
+  const getDocumentType = (type) => {
+    const types = {
+      cnic: "CNIC / National ID",
+      resume: "Resume / CV",
+      education:
+        "Educational Certificate",
+      contract:
+        "Employment Contract",
+    };
+
+    return types[type] || "Other Document";
+  };
+
+  /* =======================================================
+     RESET FORM
+  ======================================================= */
+
+  const resetForm = () => {
+    setForm({
+      employee_code: "",
+      first_name: "",
+      last_name: "",
+      date_of_birth: "",
+      gender: "",
+      email: "",
+      phone: "",
+      address: "",
+      city: "",
+      country: "Pakistan",
+      department_id: "",
+      position: "",
+      manager_id: "",
+      joining_date: "",
+      employment_type: "",
+      salary: "",
+      emergency_contact_name: "",
+      emergency_contact_phone: "",
+      status: "Active",
+    });
+
+    setSkills([]);
+
+    setDocuments({
+      cnic: null,
+      resume: null,
+      education: null,
+      contract: null,
+    });
+
+    if (photo?.url) {
+      URL.revokeObjectURL(photo.url);
+    }
+
+    setPhoto(null);
+  };
+
+  /* =======================================================
+     SAVE EMPLOYEE
+  ======================================================= */
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    setError("");
+    setSuccess("");
+
+    /* -----------------------------------------------------
+       VALIDATION
+    ----------------------------------------------------- */
+
+    if (!form.first_name.trim()) {
+      setError("First name is required.");
+      return;
+    }
+
+    if (!form.last_name.trim()) {
+      setError("Last name is required.");
+      return;
+    }
+
+    if (!form.email.trim()) {
+      setError("Work email is required.");
+      return;
+    }
+
+    if (!form.gender) {
+      setError("Please select gender.");
+      return;
+    }
+
+    if (!form.department_id) {
+      setError("Please select a department.");
+      return;
+    }
+
+    if (!form.position) {
+      setError("Please select a position.");
+      return;
+    }
+
+    if (!form.employment_type) {
+      setError(
+        "Please select employment type."
+      );
+      return;
+    }
+
+    if (!form.joining_date) {
+      setError("Joining date is required.");
+      return;
+    }
+
+    if (
+      !form.emergency_contact_name.trim()
+    ) {
+      setError(
+        "Emergency contact name is required."
+      );
+      return;
+    }
+
+    if (
+      !form.emergency_contact_phone.trim()
+    ) {
+      setError(
+        "Emergency contact phone is required."
+      );
+      return;
+    }
+
+    const token = getToken();
+
+    if (!token) {
+      setError(
+        "Your login session has expired. Please login again."
+      );
+
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      /* ---------------------------------------------------
+         EMPLOYEE CODE
+      --------------------------------------------------- */
+
+      const employeeCode =
+        form.employee_code ||
+        generateEmployeeCode();
+
+      /* ---------------------------------------------------
+         EMPLOYEE PAYLOAD
+      --------------------------------------------------- */
+
+      const payload = {
+        employee_code: employeeCode,
+
+        first_name:
+          form.first_name.trim(),
+
+        last_name:
+          form.last_name.trim(),
+
+        email:
+          form.email.trim(),
+
+        phone:
+          form.phone.trim() || null,
+
+        date_of_birth:
+          form.date_of_birth || null,
+
+        gender:
+          form.gender,
+
+        address:
+          form.address.trim() || null,
+
+        city:
+          form.city.trim() || null,
+
+        country:
+          form.country.trim() ||
+          "Pakistan",
+
+        department_id:
+          Number(form.department_id),
+
+        position:
+          form.position,
+
+        manager_id:
+          form.manager_id
+            ? Number(form.manager_id)
+            : null,
+
+        joining_date:
+          form.joining_date,
+
+        employment_type:
+          form.employment_type,
+
+        salary:
+          form.salary
+            ? Number(form.salary)
+            : 0,
+
+        skills:
+          skills.length > 0
+            ? skills.join(", ")
+            : null,
+
+        emergency_contact_name:
+          form.emergency_contact_name.trim(),
+
+        emergency_contact_phone:
+          form.emergency_contact_phone.trim(),
+
+        status:
+          form.status || "Active",
+      };
+
+      /* ---------------------------------------------------
+         CREATE EMPLOYEE
+      --------------------------------------------------- */
+
+      const response = await fetch(
+        `${API_URL}/api/employees`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+
+            Authorization:
+              `Bearer ${token}`,
+          },
+
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const data =
+        await response.json();
+
+      if (!response.ok || !data.success) {
+        if (response.status === 401) {
+          throw new Error(
+            "Your login session has expired. Please login again."
+          );
+        }
+
+        throw new Error(
+          data.message ||
+            "Failed to create employee."
+        );
+      }
+
+      /* ---------------------------------------------------
+         GET NEW EMPLOYEE ID
+      --------------------------------------------------- */
+
+      const employeeId =
+        data.employeeId ||
+        data.employee?.id ||
+        data.id;
+
+      if (!employeeId) {
+        throw new Error(
+          "Employee was created but the employee ID was not returned by the server."
+        );
+      }
+
+      /* ---------------------------------------------------
+         UPLOAD DOCUMENTS
+      --------------------------------------------------- */
+
+      const selectedDocuments =
+        Object.values(documents).filter(
+          Boolean
+        ).length;
+
+      let uploadedDocuments = 0;
+
+      if (selectedDocuments > 0) {
+        const documentResult =
+          await uploadEmployeeDocuments(
+            employeeId,
+            token
+          );
+
+        uploadedDocuments =
+          documentResult.documents
+            ?.length ||
+          documentResult.uploaded ||
+          selectedDocuments;
+      }
+
+      /* ---------------------------------------------------
+         SUCCESS
+      --------------------------------------------------- */
+
+      setSuccess(
+        uploadedDocuments > 0
+          ? `Employee ${employeeCode} created successfully with ${uploadedDocuments} document${uploadedDocuments > 1 ? "s" : ""}.`
+          : `Employee ${employeeCode} created successfully.`
+      );
+
+      /* ---------------------------------------------------
+         RESET
+      --------------------------------------------------- */
+
+      resetForm();
+
+      /* ---------------------------------------------------
+         RELOAD EMPLOYEES
+      --------------------------------------------------- */
+
+      const employeeResponse =
+        await fetch(
+          `${API_URL}/api/employees`,
+          {
+            headers: {
+              Authorization:
+                `Bearer ${token}`,
+            },
+          }
+        );
+
+      if (employeeResponse.ok) {
+        const employeeData =
+          await employeeResponse.json();
+
+        if (employeeData.success) {
+          setEmployees(
+            employeeData.employees || []
+          );
+        }
+      }
+
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+
+    } catch (err) {
+      console.error(
+        "Create employee error:",
+        err
+      );
+
+      setError(
+        err.message ||
+          "Something went wrong while creating employee."
+      );
+
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  /* =======================================================
+     CANCEL
+  ======================================================= */
+
+  const handleCancel = () => {
+    window.history.back();
+  };
+
+  /* =======================================================
+     DEPARTMENT
+  ======================================================= */
+
+  const selectedDepartment =
+    departments.find(
+      (item) =>
+        String(item.id) ===
+        String(form.department_id)
+    );
+
+  const departmentName =
+    selectedDepartment?.name || "";
+
+  const departmentPositions =
+    positions[departmentName] || [];
+
+  /* =======================================================
+     SECTION CLASS
+  ======================================================= */
+
   const sectionClass =
     "portal-card group relative overflow-hidden p-5 transition-all duration-500 hover:-translate-y-0.5 hover:shadow-[0_15px_50px_rgba(15,23,42,0.08)] sm:p-7";
+
+  /* =======================================================
+     RENDER
+  ======================================================= */
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#f6f8fc] px-4 py-6 text-slate-900 sm:px-6 lg:px-8 dark:bg-[#070b14] dark:text-white">
 
-      {/* BACKGROUND DECORATION */}
+      {/* ===================================================
+          BACKGROUND
+      =================================================== */}
 
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -left-40 top-20 h-96 w-96 rounded-full bg-blue-500/[0.05] blur-[100px] dark:bg-blue-500/[0.08]" />
@@ -255,21 +1199,20 @@ function AddEmployee() {
 
       <div className="relative z-10 mx-auto max-w-7xl">
 
-        {/* =====================================================
-            PAGE HEADER
-        ===================================================== */}
+        {/* =================================================
+            HEADER
+        ================================================= */}
 
         <div className="mb-8 flex animate-[fadeIn_.5s_ease-out] flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
 
           <div>
-
-            {/* Breadcrumb */}
 
             <div className="mb-3 flex items-center gap-2 text-[11px] font-medium text-slate-400">
               <span>HR Portal</span>
               <span>/</span>
               <span>Employees</span>
               <span>/</span>
+
               <span className="text-blue-500">
                 Add Employee
               </span>
@@ -287,6 +1230,7 @@ function AddEmployee() {
 
               <div>
                 <div className="flex items-center gap-2">
+
                   <h1 className="text-2xl font-black tracking-tight sm:text-3xl">
                     Add New Employee
                   </h1>
@@ -294,6 +1238,7 @@ function AddEmployee() {
                   <span className="hidden rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-blue-600 sm:block dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-400">
                     New Profile
                   </span>
+
                 </div>
 
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
@@ -302,44 +1247,106 @@ function AddEmployee() {
               </div>
 
             </div>
-
           </div>
-
-          {/* HEADER BUTTONS */}
 
           <div className="flex gap-3">
 
             <button
               type="button"
+              onClick={handleCancel}
               className="group rounded-xl border border-slate-200 bg-white px-5 py-3 text-xs font-bold text-slate-600 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300 dark:hover:bg-white/[0.08]"
             >
               Cancel
             </button>
 
             <button
-              type="button"
-              className="group relative flex items-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 px-5 py-3 text-xs font-bold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-500/30 active:translate-y-0"
+              type="submit"
+              form="employee-form"
+              disabled={isSubmitting}
+              className="group relative flex items-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 px-5 py-3 text-xs font-bold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-500/30 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <span className="absolute -left-10 top-0 h-full w-8 rotate-12 bg-white/20 blur-sm transition-all duration-700 group-hover:left-[110%]" />
+              {isSubmitting ? (
+                <Loader2
+                  size={15}
+                  className="animate-spin"
+                />
+              ) : (
+                <Check size={15} />
+              )}
 
-              <Check size={15} />
-
-              Save Employee
+              {isSubmitting
+                ? "Saving..."
+                : "Save Employee"}
             </button>
 
           </div>
-
         </div>
 
-        <div className="space-y-6">
+        {/* =================================================
+            SUCCESS
+        ================================================= */}
 
-          {/* =====================================================
+        {success && (
+          <div className="mb-6 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-700 shadow-sm dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400">
+
+            <CheckCircle2
+              size={19}
+              className="mt-0.5 shrink-0"
+            />
+
+            <div>
+              <p className="text-sm font-bold">
+                Employee Created
+              </p>
+
+              <p className="mt-1 text-xs">
+                {success}
+              </p>
+            </div>
+
+          </div>
+        )}
+
+        {/* =================================================
+            ERROR
+        ================================================= */}
+
+        {error && (
+          <div className="mb-6 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700 shadow-sm dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400">
+
+            <AlertCircle
+              size={19}
+              className="mt-0.5 shrink-0"
+            />
+
+            <div>
+              <p className="text-sm font-bold">
+                Unable to save employee
+              </p>
+
+              <p className="mt-1 text-xs">
+                {error}
+              </p>
+            </div>
+
+          </div>
+        )}
+
+        {/* =================================================
+            FORM
+        ================================================= */}
+
+        <form
+          id="employee-form"
+          onSubmit={handleSubmit}
+          className="space-y-6"
+        >
+
+          {/* =================================================
               PERSONAL INFORMATION
-          ===================================================== */}
+          ================================================= */}
 
           <section className={sectionClass}>
-
-            <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-blue-500/[0.025] blur-3xl" />
 
             <SectionHeader
               icon={User}
@@ -349,7 +1356,7 @@ function AddEmployee() {
 
             <div className="grid gap-7 lg:grid-cols-[180px_1fr]">
 
-              {/* PROFILE PHOTO */}
+              {/* PHOTO */}
 
               <div>
 
@@ -362,7 +1369,7 @@ function AddEmployee() {
                   {photo ? (
                     <div className="group/photo relative">
 
-                      <div className="absolute inset-0 rounded-2xl bg-blue-500/20 blur-xl transition-all group-hover/photo:bg-blue-500/30" />
+                      <div className="absolute inset-0 rounded-2xl bg-blue-500/20 blur-xl" />
 
                       <img
                         src={photo.url}
@@ -372,7 +1379,13 @@ function AddEmployee() {
 
                       <button
                         type="button"
-                        onClick={() => setPhoto(null)}
+                        onClick={() => {
+                          URL.revokeObjectURL(
+                            photo.url
+                          );
+
+                          setPhoto(null);
+                        }}
                         className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-red-500 text-white shadow-lg transition-transform hover:scale-110 dark:border-slate-900"
                       >
                         <X size={13} />
@@ -385,10 +1398,8 @@ function AddEmployee() {
                       onClick={() =>
                         fileInputRef.current?.click()
                       }
-                      className="group/upload relative flex h-32 w-32 flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 transition-all duration-300 hover:-translate-y-1 hover:border-blue-400 hover:bg-blue-50 dark:border-white/10 dark:bg-white/[0.025] dark:hover:border-blue-500/50 dark:hover:bg-blue-500/5"
+                      className="group/upload relative flex h-32 w-32 flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 transition-all duration-300 hover:-translate-y-1 hover:border-blue-400 hover:bg-blue-50 dark:border-white/10 dark:bg-white/[0.025]"
                     >
-
-                      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-violet-500/0 transition-all group-hover/upload:from-blue-500/5 group-hover/upload:to-violet-500/5" />
 
                       <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-400 shadow-sm transition-all duration-300 group-hover/upload:scale-110 group-hover/upload:text-blue-500 dark:bg-white/5">
                         <Upload size={19} />
@@ -417,62 +1428,94 @@ function AddEmployee() {
 
               </div>
 
-              {/* FIELDS */}
+              {/* PERSONAL FIELDS */}
 
               <div className="grid gap-5 sm:grid-cols-2">
 
-                <Field label="First Name" required>
-                  <Input placeholder="Enter first name" />
+                <Field
+                  label="First Name"
+                  required
+                >
+                  <Input
+                    name="first_name"
+                    value={form.first_name}
+                    onChange={handleChange}
+                    placeholder="Enter first name"
+                  />
                 </Field>
 
-                <Field label="Last Name" required>
-                  <Input placeholder="Enter last name" />
-                </Field>
-
-                <Field label="Father / Guardian Name">
-                  <Input placeholder="Enter father or guardian name" />
+                <Field
+                  label="Last Name"
+                  required
+                >
+                  <Input
+                    name="last_name"
+                    value={form.last_name}
+                    onChange={handleChange}
+                    placeholder="Enter last name"
+                  />
                 </Field>
 
                 <Field label="Date of Birth">
-                  <Input type="date" icon={CalendarDays} />
+                  <Input
+                    name="date_of_birth"
+                    value={form.date_of_birth}
+                    onChange={handleChange}
+                    type="date"
+                    icon={CalendarDays}
+                  />
                 </Field>
 
-                <Field label="Gender" required>
-                  <Select>
-                    <option value="">Select gender</option>
+                <Field
+                  label="Gender"
+                  required
+                >
+                  <Select
+                    name="gender"
+                    value={form.gender}
+                    onChange={handleChange}
+                  >
+                    <option value="">
+                      Select gender
+                    </option>
+
                     <option>Male</option>
                     <option>Female</option>
                     <option>Other</option>
                   </Select>
                 </Field>
 
-                <Field label="CNIC / National ID">
-                  <Input placeholder="XXXXX-XXXXXXX-X" />
+                <Field
+                  label="Work Email"
+                  required
+                >
+                  <Input
+                    name="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    type="email"
+                    icon={Mail}
+                    placeholder="employee@company.com"
+                  />
                 </Field>
 
-                <Field label="Marital Status">
-                  <Select>
-                    <option value="">Select status</option>
-                    <option>Single</option>
-                    <option>Married</option>
-                    <option>Divorced</option>
-                    <option>Widowed</option>
-                  </Select>
-                </Field>
-
-                <Field label="Nationality">
-                  <Input placeholder="Pakistani" />
+                <Field label="Work Phone">
+                  <Input
+                    name="phone"
+                    value={form.phone}
+                    onChange={handleChange}
+                    icon={Phone}
+                    placeholder="+92 300 1234567"
+                  />
                 </Field>
 
               </div>
-
             </div>
-
           </section>
 
-          {/* =====================================================
+          {/* =================================================
               EMPLOYMENT
-          ===================================================== */}
+          ================================================= */}
 
           <section className={sectionClass}>
 
@@ -484,108 +1527,225 @@ function AddEmployee() {
 
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
 
-              <Field label="Employee ID" required>
-                <Input value="EMP-009" readOnly />
+              <Field
+                label="Employee ID"
+                required
+              >
+                <Input
+                  name="employee_code"
+                  value={
+                    form.employee_code ||
+                    generateEmployeeCode()
+                  }
+                  onChange={handleChange}
+                  placeholder="EMP-001"
+                />
               </Field>
 
-              <Field label="Department" required>
+              <Field
+                label="Department"
+                required
+              >
                 <Select
-                  value={department}
-                  onChange={(e) => {
-                    setDepartment(e.target.value);
-                    setPosition("");
-                  }}
+                  name="department_id"
+                  value={form.department_id}
+                  onChange={
+                    handleDepartmentChange
+                  }
                   icon={Building2}
-                >
-                  <option value="">Select department</option>
-
-                  {departments.map((item) => (
-                    <option key={item}>{item}</option>
-                  ))}
-                </Select>
-              </Field>
-
-              <Field label="Position / Designation" required>
-                <Select
-                  value={position}
-                  onChange={(e) => setPosition(e.target.value)}
-                  disabled={!department}
+                  disabled={
+                    loadingDepartments
+                  }
                 >
                   <option value="">
-                    {department
-                      ? "Select position"
-                      : "Select department first"}
+                    {loadingDepartments
+                      ? "Loading departments..."
+                      : "Select department"}
                   </option>
 
-                  {(positions[department] || []).map(
+                  {departments.map(
                     (item) => (
-                      <option key={item}>{item}</option>
+                      <option
+                        key={item.id}
+                        value={item.id}
+                      >
+                        {item.name}
+                      </option>
                     )
                   )}
                 </Select>
               </Field>
 
-              <Field label="Employment Type" required>
-                <Select>
-                  <option value="">Select employment type</option>
-                  <option>Full Time</option>
-                  <option>Part Time</option>
-                  <option>Contract</option>
-                  <option>Intern</option>
-                  <option>Temporary</option>
+              <Field
+                label="Position / Designation"
+                required
+              >
+                <Select
+                  name="position"
+                  value={form.position}
+                  onChange={
+                    handlePositionChange
+                  }
+                  disabled={
+                    !form.department_id ||
+                    departmentPositions.length ===
+                      0
+                  }
+                >
+                  <option value="">
+                    {form.department_id
+                      ? "Select position"
+                      : "Select department first"}
+                  </option>
+
+                  {departmentPositions.map(
+                    (item) => (
+                      <option
+                        key={item}
+                        value={item}
+                      >
+                        {item}
+                      </option>
+                    )
+                  )}
                 </Select>
               </Field>
 
-              <Field label="Joining Date" required>
-                <Input type="date" icon={CalendarDays} />
+              <Field
+                label="Employment Type"
+                required
+              >
+                <Select
+                  name="employment_type"
+                  value={
+                    form.employment_type
+                  }
+                  onChange={handleChange}
+                >
+                  <option value="">
+                    Select employment type
+                  </option>
+
+                  <option>
+                    Full Time
+                  </option>
+
+                  <option>
+                    Part Time
+                  </option>
+
+                  <option>
+                    Contract
+                  </option>
+
+                  <option>
+                    Intern
+                  </option>
+
+                  <option>
+                    Temporary
+                  </option>
+                </Select>
+              </Field>
+
+              <Field
+                label="Joining Date"
+                required
+              >
+                <Input
+                  name="joining_date"
+                  value={form.joining_date}
+                  onChange={handleChange}
+                  type="date"
+                  icon={CalendarDays}
+                />
               </Field>
 
               <Field label="Reporting Manager">
-                <Select icon={Users}>
-                  <option value="">Select manager</option>
+                <Select
+                  name="manager_id"
+                  value={form.manager_id}
+                  onChange={handleChange}
+                  icon={Users}
+                  disabled={loadingManagers}
+                >
+                  <option value="">
+                    {loadingManagers
+                      ? "Loading managers..."
+                      : "Select manager"}
+                  </option>
 
-                  {managers.map((manager) => (
-                    <option key={manager}>{manager}</option>
-                  ))}
+                  {employees.map(
+                    (employee) => (
+                      <option
+                        key={employee.id}
+                        value={employee.id}
+                      >
+                        {employee.first_name}{" "}
+                        {employee.last_name}
+
+                        {employee.position
+                          ? ` — ${employee.position}`
+                          : ""}
+                      </option>
+                    )
+                  )}
                 </Select>
               </Field>
 
               <Field label="Work Location">
                 <Select icon={MapPinned}>
-                  <option value="">Select location</option>
-                  <option>Head Office</option>
-                  <option>Branch Office</option>
-                  <option>Remote</option>
-                  <option>Hybrid</option>
+                  <option value="">
+                    Select location
+                  </option>
+
+                  <option>
+                    Head Office
+                  </option>
+
+                  <option>
+                    Branch Office
+                  </option>
+
+                  <option>
+                    Remote
+                  </option>
+
+                  <option>
+                    Hybrid
+                  </option>
                 </Select>
               </Field>
 
-              <Field label="Employee Status" required>
-                <Select>
-                  <option>Active</option>
-                  <option>Inactive</option>
-                  <option>Probation</option>
-                  <option>Suspended</option>
-                </Select>
-              </Field>
+              <Field
+                label="Employee Status"
+                required
+              >
+                <Select
+                  name="status"
+                  value={form.status}
+                  onChange={handleChange}
+                >
+                  <option>
+                    Active
+                  </option>
 
-              <Field label="Probation Period">
-                <Select>
-                  <option value="">Select period</option>
-                  <option>None</option>
-                  <option>1 Month</option>
-                  <option>3 Months</option>
-                  <option>6 Months</option>
+                  <option>
+                    Inactive
+                  </option>
+
+                  <option>
+                    Suspended
+                  </option>
                 </Select>
               </Field>
 
             </div>
-
           </section>
 
-          {/* =====================================================
+          {/* =================================================
               CONTACT
-          ===================================================== */}
+          ================================================= */}
 
           <section className={sectionClass}>
 
@@ -597,32 +1757,26 @@ function AddEmployee() {
 
             <div className="grid gap-5 sm:grid-cols-2">
 
-              <Field label="Work Email" required>
+              <Field
+                label="Email"
+                required
+              >
                 <Input
                   type="email"
+                  name="email"
                   icon={Mail}
+                  value={form.email}
+                  onChange={handleChange}
                   placeholder="employee@company.com"
                 />
               </Field>
 
-              <Field label="Personal Email">
+              <Field label="Phone">
                 <Input
-                  type="email"
-                  icon={Mail}
-                  placeholder="personal@email.com"
-                />
-              </Field>
-
-              <Field label="Work Phone">
-                <Input
+                  name="phone"
                   icon={Phone}
-                  placeholder="+92 300 1234567"
-                />
-              </Field>
-
-              <Field label="Personal Phone">
-                <Input
-                  icon={Phone}
+                  value={form.phone}
+                  onChange={handleChange}
                   placeholder="+92 300 1234567"
                 />
               </Field>
@@ -633,6 +1787,14 @@ function AddEmployee() {
               >
                 <textarea
                   rows="3"
+                  value={form.address}
+                  onChange={(e) =>
+                    setForm((current) => ({
+                      ...current,
+                      address:
+                        e.target.value,
+                    }))
+                  }
                   placeholder="Enter current residential address"
                   className="w-full resize-none rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-700 outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/[0.035] dark:text-white"
                 />
@@ -640,13 +1802,21 @@ function AddEmployee() {
 
               <Field label="City">
                 <Input
+                  name="city"
                   icon={MapPin}
+                  value={form.city}
+                  onChange={handleChange}
                   placeholder="Enter city"
                 />
               </Field>
 
-              <Field label="Postal Code">
-                <Input placeholder="Enter postal code" />
+              <Field label="Country">
+                <Input
+                  name="country"
+                  value={form.country}
+                  onChange={handleChange}
+                  placeholder="Pakistan"
+                />
               </Field>
 
               <div className="sm:col-span-2">
@@ -657,7 +1827,9 @@ function AddEmployee() {
                     type="checkbox"
                     checked={sameAddress}
                     onChange={(e) =>
-                      setSameAddress(e.target.checked)
+                      setSameAddress(
+                        e.target.checked
+                      )
                     }
                     className="peer sr-only"
                   />
@@ -671,7 +1843,7 @@ function AddEmployee() {
                     )}
                   </div>
 
-                  <span className="text-xs text-slate-500 transition-colors group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-white">
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
                     Permanent address is same as current address
                   </span>
 
@@ -680,12 +1852,11 @@ function AddEmployee() {
               </div>
 
             </div>
-
           </section>
 
-          {/* =====================================================
+          {/* =================================================
               EMERGENCY
-          ===================================================== */}
+          ================================================= */}
 
           <section className={sectionClass}>
 
@@ -697,60 +1868,88 @@ function AddEmployee() {
 
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
 
-              <Field label="Contact Name" required>
-                <Input placeholder="Enter contact name" />
+              <Field
+                label="Contact Name"
+                required
+              >
+                <Input
+                  name="emergency_contact_name"
+                  value={
+                    form.emergency_contact_name
+                  }
+                  onChange={handleChange}
+                  placeholder="Enter contact name"
+                />
               </Field>
 
-              <Field label="Relationship" required>
+              <Field label="Relationship">
                 <Select>
-                  <option value="">Select relationship</option>
-                  <option>Father</option>
-                  <option>Mother</option>
-                  <option>Spouse</option>
-                  <option>Brother</option>
-                  <option>Sister</option>
-                  <option>Other</option>
+                  <option value="">
+                    Select relationship
+                  </option>
+
+                  <option>
+                    Father
+                  </option>
+
+                  <option>
+                    Mother
+                  </option>
+
+                  <option>
+                    Spouse
+                  </option>
+
+                  <option>
+                    Brother
+                  </option>
+
+                  <option>
+                    Sister
+                  </option>
+
+                  <option>
+                    Other
+                  </option>
                 </Select>
               </Field>
 
-              <Field label="Contact Phone" required>
+              <Field
+                label="Contact Phone"
+                required
+              >
                 <Input
+                  name="emergency_contact_phone"
+                  value={
+                    form.emergency_contact_phone
+                  }
+                  onChange={handleChange}
                   icon={Phone}
                   placeholder="+92 300 1234567"
                 />
               </Field>
 
-              <Field
-                label="Emergency Address"
-                className="sm:col-span-2 lg:col-span-3"
-              >
-                <textarea
-                  rows="2"
-                  placeholder="Enter emergency contact address"
-                  className="w-full resize-none rounded-xl border border-slate-200 bg-white p-3 text-sm outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/[0.035] dark:text-white"
-                />
-              </Field>
-
             </div>
-
           </section>
 
-          {/* =====================================================
+          {/* =================================================
               SALARY
-          ===================================================== */}
+          ================================================= */}
 
           <section className={sectionClass}>
 
             <SectionHeader
               icon={CreditCard}
               title="Salary & Payment Information"
-              description="Configure salary, payment method and banking details."
+              description="Configure the employee's basic salary."
             />
 
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
 
-              <Field label="Basic Salary" required>
-
+              <Field
+                label="Basic Salary"
+                required
+              >
                 <div className="flex h-12 overflow-hidden rounded-xl border border-slate-200 bg-white transition-all focus-within:border-blue-500/50 focus-within:ring-4 focus-within:ring-blue-500/10 dark:border-white/10 dark:bg-white/[0.035]">
 
                   <span className="flex items-center border-r border-slate-200 bg-slate-50 px-4 text-[11px] font-bold text-slate-500 dark:border-white/10 dark:bg-white/5">
@@ -758,51 +1957,60 @@ function AddEmployee() {
                   </span>
 
                   <input
+                    name="salary"
                     type="number"
+                    min="0"
+                    value={form.salary}
+                    onChange={handleChange}
                     placeholder="0"
                     className="w-full bg-transparent px-3 text-sm outline-none dark:text-white"
                   />
 
                 </div>
-
               </Field>
 
               <Field label="Salary Frequency">
-                <Select icon={Banknote}>
-                  <option>Monthly</option>
-                  <option>Weekly</option>
-                  <option>Hourly</option>
+                <Select>
+                  <option>
+                    Monthly
+                  </option>
+
+                  <option>
+                    Weekly
+                  </option>
+
+                  <option>
+                    Hourly
+                  </option>
                 </Select>
               </Field>
 
               <Field label="Payment Method">
                 <Select>
-                  <option value="">Select payment method</option>
-                  <option>Bank Transfer</option>
-                  <option>Cash</option>
-                  <option>Cheque</option>
+                  <option value="">
+                    Select payment method
+                  </option>
+
+                  <option>
+                    Bank Transfer
+                  </option>
+
+                  <option>
+                    Cash
+                  </option>
+
+                  <option>
+                    Cheque
+                  </option>
                 </Select>
               </Field>
 
-              <Field label="Bank Name">
-                <Input placeholder="Enter bank name" />
-              </Field>
-
-              <Field label="Account Title">
-                <Input placeholder="Enter account title" />
-              </Field>
-
-              <Field label="IBAN">
-                <Input placeholder="PK00 XXXX XXXX XXXX XXXX" />
-              </Field>
-
             </div>
-
           </section>
 
-          {/* =====================================================
+          {/* =================================================
               SKILLS
-          ===================================================== */}
+          ================================================= */}
 
           <section className={sectionClass}>
 
@@ -820,164 +2028,220 @@ function AddEmployee() {
 
               <div className="flex flex-wrap gap-2">
 
-                {availableSkills.map((skill) => {
+                {availableSkills.map(
+                  (skill) => {
+                    const selected =
+                      skills.includes(skill);
 
-                  const selected = skills.includes(skill);
+                    return (
+                      <button
+                        type="button"
+                        key={skill}
+                        onClick={() =>
+                          toggleSkill(
+                            skill
+                          )
+                        }
+                        className={
+                          "group flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-[11px] font-semibold transition-all duration-300 " +
+                          (selected
+                            ? "border-blue-500 bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/20"
+                            : "border-slate-200 bg-white text-slate-600 hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-300")
+                        }
+                      >
+                        {selected && (
+                          <Check size={12} />
+                        )}
 
-                  return (
-                    <button
-                      type="button"
-                      key={skill}
-                      onClick={() => toggleSkill(skill)}
-                      className={
-                        "group flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-[11px] font-semibold transition-all duration-300 " +
-                        (selected
-                          ? "border-blue-500 bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/20"
-                          : "border-slate-200 bg-white text-slate-600 hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-300 dark:hover:border-blue-500/40 dark:hover:bg-blue-500/10")
-                      }
-                    >
-                      {selected && (
-                        <Check size={12} />
-                      )}
-
-                      {skill}
-                    </button>
-                  );
-                })}
+                        {skill}
+                      </button>
+                    );
+                  }
+                )}
 
               </div>
-
             </div>
-
-            <div className="mt-7">
-
-              <Field label="Additional Notes">
-
-                <textarea
-                  rows="4"
-                  placeholder="Add any additional information about the employee..."
-                  className="w-full resize-none rounded-xl border border-slate-200 bg-white p-3 text-sm outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/[0.035] dark:text-white"
-                />
-
-              </Field>
-
-            </div>
-
           </section>
 
-          {/* =====================================================
+          {/* =================================================
               DOCUMENTS
-          ===================================================== */}
+          ================================================= */}
 
           <section className={sectionClass}>
 
             <SectionHeader
               icon={FileText}
               title="Employee Documents"
-              description="Upload important employee documents."
+              description="Upload important employee documents. Files are securely linked to this employee."
             />
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mb-5 flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
 
-              {[
-                "CNIC / National ID",
-                "Resume / CV",
-                "Educational Certificate",
-                "Employment Contract",
-              ].map((document) => (
+              <ShieldCheck
+                size={16}
+                className="shrink-0"
+              />
 
-                <label
-                  key={document}
-                  className="group/doc relative flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 p-7 text-center transition-all duration-300 hover:-translate-y-1 hover:border-blue-400 hover:bg-blue-50 dark:border-white/10 dark:bg-white/[0.025] dark:hover:border-blue-500/40 dark:hover:bg-blue-500/5"
-                >
-
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-violet-500/0 transition-all duration-300 group-hover/doc:from-blue-500/5 group-hover/doc:to-violet-500/5" />
-
-                  <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-white text-slate-400 shadow-sm transition-all duration-300 group-hover/doc:scale-110 group-hover/doc:text-blue-500 dark:bg-white/5">
-
-                    <FileCheck2 size={20} />
-
-                  </div>
-
-                  <span className="relative mt-4 text-[11px] font-bold text-slate-600 group-hover/doc:text-blue-600 dark:text-slate-300">
-                    {document}
-                  </span>
-
-                  <span className="relative mt-1 text-[9px] text-slate-400">
-                    PDF, JPG or PNG
-                  </span>
-
-                  <input
-                    type="file"
-                    className="hidden"
-                  />
-
-                </label>
-
-              ))}
+              <span>
+                Supported formats: PDF, JPG,
+                PNG, DOC, DOCX. Maximum file
+                size is 10MB.
+              </span>
 
             </div>
 
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
+              {documentTypes.map(
+                (document) => (
+                  <DocumentCard
+                    key={document.key}
+                    label={
+                      document.label
+                    }
+                    file={
+                      documents[
+                        document.key
+                      ]
+                    }
+                    onSelect={(file) =>
+                      handleDocumentSelect(
+                        document.key,
+                        file
+                      )
+                    }
+                    onRemove={() =>
+                      removeDocument(
+                        document.key
+                      )
+                    }
+                  />
+                )
+              )}
+
+            </div>
+
+            {/* UPLOAD STATUS */}
+
+            {Object.values(documents).some(
+              Boolean
+            ) && (
+              <div className="mt-5 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 dark:border-emerald-500/20 dark:bg-emerald-500/10">
+
+                <div className="flex items-center gap-2">
+
+                  <CheckCircle2
+                    size={16}
+                    className="text-emerald-600 dark:text-emerald-400"
+                  />
+
+                  <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                    {
+                      Object.values(
+                        documents
+                      ).filter(Boolean)
+                        .length
+                    }{" "}
+                    document
+                    {Object.values(
+                      documents
+                    ).filter(Boolean)
+                      .length !== 1
+                      ? "s"
+                      : ""}{" "}
+                    selected and ready to upload.
+                  </span>
+
+                </div>
+
+              </div>
+            )}
+
           </section>
 
-          {/* =====================================================
+          {/* =================================================
               BOTTOM ACTIONS
-          ===================================================== */}
+          ================================================= */}
 
           <div className="portal-card flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
 
             <div className="flex items-center gap-2 text-[10px] text-slate-400">
+
               <ShieldCheck
                 size={15}
                 className="text-emerald-500"
               />
 
               Employee information is securely stored.
+
             </div>
 
             <div className="flex flex-col-reverse gap-3 sm:flex-row">
 
               <button
                 type="button"
-                className="rounded-xl border border-slate-200 px-6 py-3 text-xs font-bold text-slate-600 transition-all hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/5"
+                onClick={handleCancel}
+                disabled={isSubmitting}
+                className="rounded-xl border border-slate-200 px-6 py-3 text-xs font-bold text-slate-600 transition-all hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/5"
               >
                 Cancel
               </button>
 
               <button
                 type="button"
-                className="rounded-xl border border-blue-200 bg-blue-50 px-6 py-3 text-xs font-bold text-blue-600 transition-all hover:bg-blue-100 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-400"
+                disabled={isSubmitting}
+                className="rounded-xl border border-blue-200 bg-blue-50 px-6 py-3 text-xs font-bold text-blue-600 transition-all hover:bg-blue-100 disabled:opacity-50 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-400"
+                onClick={() => {
+                  setSuccess(
+                    "Draft functionality will be connected to the Documents/Drafts system."
+                  );
+
+                  window.scrollTo({
+                    top: 0,
+                    behavior: "smooth",
+                  });
+                }}
               >
                 Save as Draft
               </button>
 
               <button
-                type="button"
-                className="group relative flex items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 px-7 py-3 text-xs font-bold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-500/30 active:translate-y-0"
+                type="submit"
+                disabled={isSubmitting}
+                className="group relative flex items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 px-7 py-3 text-xs font-bold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-500/30 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
               >
 
-                <span className="absolute -left-12 top-0 h-full w-10 rotate-12 bg-white/20 blur-sm transition-all duration-700 group-hover:left-[120%]" />
+                {isSubmitting ? (
+                  <>
+                    <Loader2
+                      size={15}
+                      className="animate-spin"
+                    />
 
-                <span className="relative">
-                  Create Employee
-                </span>
+                    <span>
+                      Creating...
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span>
+                      Create Employee
+                    </span>
 
-                <ArrowRight
-                  size={15}
-                  className="relative transition-transform duration-300 group-hover:translate-x-1"
-                />
+                    <ArrowRight
+                      size={15}
+                      className="transition-transform duration-300 group-hover:translate-x-1"
+                    />
+                  </>
+                )}
 
               </button>
 
             </div>
-
           </div>
 
-        </div>
-
+        </form>
       </div>
-
-      {/* ANIMATION */}
 
       <style>{`
         @keyframes fadeIn {
@@ -985,13 +2249,13 @@ function AddEmployee() {
             opacity: 0;
             transform: translateY(12px);
           }
+
           to {
             opacity: 1;
             transform: translateY(0);
           }
         }
       `}</style>
-
     </div>
   );
 }

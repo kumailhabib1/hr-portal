@@ -1,36 +1,82 @@
 const express = require("express");
 const cors = require("cors");
-const dotenv = require("dotenv");
-
-dotenv.config();
-
-require("./config/db");
+require("dotenv").config();
 
 const authRoutes = require("./routes/authRoutes");
+const employeeRoutes = require("./routes/employeeRoutes");
+const departmentRoutes = require("./routes/departmentRoutes");
+const managerRoutes = require("./routes/managerRoutes");
+const documentRoutes = require("./routes/documentRoutes");
 
 const app = express();
 
-// Middleware
-app.use(cors());
+app.use(
+    cors({
+        origin: true,
+        credentials: true,
+    })
+);
+
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// API Routes
-app.use("/api/auth", authRoutes);
+app.use(
+    express.urlencoded({
+        extended: true,
+    })
+);
 
-// Test API
+/*
+|--------------------------------------------------------------------------
+| Static Upload Files
+|--------------------------------------------------------------------------
+*/
+
+app.use(
+    "/uploads",
+    express.static("uploads")
+);
+
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+*/
+
+app.use(
+    "/api/auth",
+    authRoutes
+);
+
+app.use(
+    "/api/employees",
+    employeeRoutes
+);
+
+app.use(
+    "/api/departments",
+    departmentRoutes
+);
+
+app.use(
+    "/api/managers",
+    managerRoutes
+);
+
+app.use(
+    "/api/documents",
+    documentRoutes
+);
+
+/*
+|--------------------------------------------------------------------------
+| Test Route
+|--------------------------------------------------------------------------
+*/
+
 app.get("/", (req, res) => {
     res.json({
         success: true,
-        message: "HR Portal API is running successfully",
-    });
-});
-
-// 404 handler
-app.use((req, res) => {
-    res.status(404).json({
-        success: false,
-        message: "API route not found",
+        message: "HR Portal API is running",
     });
 });
 

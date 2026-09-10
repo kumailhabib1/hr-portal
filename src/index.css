@@ -9,7 +9,7 @@
 
 .shared-page-action-button {
   border: 1px solid #34d399;
-  box-shadow: 0 12px 30px rgba(16,185,129,0.12);
+  box-shadow: 0 12px 30px rgba(16, 185, 129, 0.12);
 }
 
 .shared-page-action-button {
@@ -368,13 +368,13 @@ html.dark .performance-table-scroll::-webkit-scrollbar-thumb {
   transform: translateY(-5px);
 }
 
-.all-employees-page .portal-card-interactive > .relative {
+.all-employees-page .portal-card-interactive>.relative {
   position: relative;
   z-index: 1;
 }
 
 /* Keep light-mode cards crisp; the ambient glow is reserved for dark mode. */
-.all-employees-page .portal-card > .blur-2xl {
+.all-employees-page .portal-card>.blur-2xl {
   opacity: 0;
 }
 
@@ -383,7 +383,7 @@ html.dark .performance-table-scroll::-webkit-scrollbar-thumb {
   box-shadow: 0 18px 36px rgb(37 99 235 / 16%);
 }
 
-html.dark .all-employees-page .portal-card > .blur-2xl {
+html.dark .all-employees-page .portal-card>.blur-2xl {
   opacity: 1;
 }
 
@@ -414,17 +414,17 @@ body {
   background: #f8fafc;
   color: #0f172a;
 
-.sidebar-nav {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
+  .sidebar-nav {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
 
-.sidebar-nav::-webkit-scrollbar {
-  display: none;
-}
-  transition:
-    background-color 0.3s ease,
-    color 0.3s ease;
+  .sidebar-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  transition: background-color 0.3s ease,
+  color 0.3s ease;
 }
 
 html.dark body {
@@ -594,7 +594,7 @@ html.dark .dashboard-page [class~="border-slate-100"] {
   border-color: #1c293d !important;
 }
 
-html.dark .dashboard-page [class~="divide-slate-100"] > :not([hidden]) ~ :not([hidden]) {
+html.dark .dashboard-page [class~="divide-slate-100"]> :not([hidden])~ :not([hidden]) {
   border-color: #1c293d !important;
 }
 

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
+import { logout } from "../utils/auth";
 import {
   Bell,
   ChevronDown,
@@ -1199,11 +1199,9 @@ function Header({ onMenuClick }) {
                   {/* LOGOUT */}
 
                   <button
-                    onClick={() => {
-                      setProfileOpen(false);
-                      navigate("/login");
-                    }}
-                    className="
+                 type="button"
+  onClick={logout}
+  className="
                       group
                       flex
                       w-full
