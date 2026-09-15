@@ -8,6 +8,10 @@ const departmentRoutes = require("./routes/departmentRoutes");
 const managerRoutes = require("./routes/managerRoutes");
 const documentRoutes = require("./routes/documentRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
+const authMiddleware = require("./middleware/authMiddleware");
+const attendanceRoutes =
+    require("./routes/attendanceRoutes");
+
 
 const app = express();
 
@@ -36,7 +40,7 @@ app.use("/api/employees", employeeRoutes);
 app.use("/api/departments", departmentRoutes);
 app.use("/api/managers", managerRoutes);
 app.use("/api/documents", documentRoutes);
-
+app.use("/api/attendance", attendanceRoutes); 
 // IMPORTANT
 app.use("/api/dashboard", dashboardRoutes);
 
