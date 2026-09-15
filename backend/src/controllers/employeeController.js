@@ -1,8 +1,190 @@
 const pool = require("../config/db");
 
-// ==========================================
-// CREATE EMPLOYEE
-// ==========================================
+/*
+|--------------------------------------------------------------------------
+| GET ALL EMPLOYEES
+|--------------------------------------------------------------------------
+*/
+
+const getEmployees = async (req, res) => {
+    try {
+        const [employees] = await pool.execute(`
+            SELECT
+                e.id,
+                e.employee_code,
+                e.first_name,
+                e.last_name,
+                e.email,
+                e.phone,
+                e.date_of_birth,
+                e.gender,
+                e.address,
+                e.city,
+                e.country,
+                e.profile_photo,
+                e.department_id,
+                e.position,
+                e.manager_id,
+                e.joining_date,
+                e.employment_type,
+                e.salary,
+                e.skills,
+                e.emergency_contact_name,
+                e.emergency_contact_phone,
+                e.status,
+                e.created_at,
+                e.updated_at,
+
+                d.name AS department_name,
+
+                CONCAT(
+                    e.first_name,
+                    ' ',
+                    e.last_name
+                ) AS full_name
+
+            FROM employees e
+
+            LEFT JOIN departments d
+                ON e.department_id = d.id
+
+            ORDER BY
+                e.created_at DESC,
+                e.first_name ASC
+        `);
+
+        const formattedEmployees = employees.map((employee) => {
+            const firstName =
+                employee.first_name || "";
+
+            const lastName =
+                employee.last_name || "";
+
+            const name =
+                `${firstName} ${lastName}`.trim();
+
+            const initials =
+                `${firstName.charAt(0)}${lastName.charAt(0)}`
+                    .toUpperCase();
+
+            return {
+                ...employee,
+
+                // Fields used by All Employees UI
+                name: name || "Unnamed Employee",
+
+                department:
+                    employee.department_name ||
+                    "Unassigned",
+
+                initials:
+                    initials || "NA",
+            };
+        });
+
+        return res.status(200).json({
+            success: true,
+            count: formattedEmployees.length,
+            employees: formattedEmployees,
+        });
+
+    } catch (error) {
+        console.error(
+            "Get employees error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: "Unable to load employees",
+            error: error.message,
+        });
+    }
+};
+
+
+/*
+|--------------------------------------------------------------------------
+| GET SINGLE EMPLOYEE
+|--------------------------------------------------------------------------
+*/
+
+const getEmployeeById = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const [employees] = await pool.execute(
+            `
+            SELECT
+                e.*,
+                d.name AS department_name,
+
+                CONCAT(
+                    e.first_name,
+                    ' ',
+                    e.last_name
+                ) AS full_name
+
+            FROM employees e
+
+            LEFT JOIN departments d
+                ON e.department_id = d.id
+
+            WHERE e.id = ?
+
+            LIMIT 1
+            `,
+            [id]
+        );
+
+        if (employees.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Employee not found",
+            });
+        }
+
+        const employee = employees[0];
+
+        const initials =
+            `${employee.first_name?.charAt(0) || ""}${employee.last_name?.charAt(0) || ""}`
+                .toUpperCase();
+
+        return res.status(200).json({
+            success: true,
+            employee: {
+                ...employee,
+                name:
+                    employee.full_name ||
+                    "Unnamed Employee",
+                department:
+                    employee.department_name ||
+                    "Unassigned",
+                initials:
+                    initials || "NA",
+            },
+        });
+
+    } catch (error) {
+        console.error(
+            "Get employee error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: "Unable to load employee",
+            error: error.message,
+        });
+    }
+};
+
+
+/*
+|--------------------------------------------------------------------------
+| CREATE EMPLOYEE
+|--------------------------------------------------------------------------
+*/
 
 const createEmployee = async (req, res) => {
     try {
@@ -26,67 +208,52 @@ const createEmployee = async (req, res) => {
             skills,
             emergency_contact_name,
             emergency_contact_phone,
-            status,
+            status = "Active",
         } = req.body;
 
-        console.log("Create employee request:", req.body);
-
-        // ------------------------------------------
-        // REQUIRED FIELDS
-        // ------------------------------------------
-
-        if (!first_name?.trim()) {
+        if (
+            !employee_code ||
+            !first_name ||
+            !last_name ||
+            !email ||
+            !department_id ||
+            !position ||
+            !joining_date
+        ) {
             return res.status(400).json({
                 success: false,
-                message: "First name is required",
+                message:
+                    "Employee code, name, email, department, position and joining date are required",
             });
         }
 
-        if (!last_name?.trim()) {
-            return res.status(400).json({
+        // Check employee code
+        const [existingCode] = await pool.execute(
+            `
+            SELECT id
+            FROM employees
+            WHERE employee_code = ?
+            LIMIT 1
+            `,
+            [employee_code]
+        );
+
+        if (existingCode.length > 0) {
+            return res.status(409).json({
                 success: false,
-                message: "Last name is required",
+                message: "Employee code already exists",
             });
         }
 
-        if (!email?.trim()) {
-            return res.status(400).json({
-                success: false,
-                message: "Email is required",
-            });
-        }
-
-        if (!department_id) {
-            return res.status(400).json({
-                success: false,
-                message: "Department is required",
-            });
-        }
-
-        if (!position?.trim()) {
-            return res.status(400).json({
-                success: false,
-                message: "Position is required",
-            });
-        }
-
-        if (!joining_date) {
-            return res.status(400).json({
-                success: false,
-                message: "Joining date is required",
-            });
-        }
-
-        // ------------------------------------------
-        // CHECK EMAIL
-        // ------------------------------------------
-
+        // Check email
         const [existingEmail] = await pool.execute(
-            `SELECT id
-             FROM employees
-             WHERE email = ?
-             LIMIT 1`,
-            [email.trim()]
+            `
+            SELECT id
+            FROM employees
+            WHERE email = ?
+            LIMIT 1
+            `,
+            [email]
         );
 
         if (existingEmail.length > 0) {
@@ -96,77 +263,48 @@ const createEmployee = async (req, res) => {
             });
         }
 
-        // ------------------------------------------
-        // CHECK EMPLOYEE CODE
-        // ------------------------------------------
-
-        if (employee_code) {
-            const [existingCode] = await pool.execute(
-                `SELECT id
-                 FROM employees
-                 WHERE employee_code = ?
-                 LIMIT 1`,
-                [employee_code]
-            );
-
-            if (existingCode.length > 0) {
-                return res.status(409).json({
-                    success: false,
-                    message: "Employee ID already exists",
-                });
-            }
-        }
-
-        // ------------------------------------------
-        // CHECK DEPARTMENT
-        // ------------------------------------------
-
+        // Check department
         const [department] = await pool.execute(
-            `SELECT id, name
-             FROM departments
-             WHERE id = ?
-             LIMIT 1`,
-            [Number(department_id)]
+            `
+            SELECT id
+            FROM departments
+            WHERE id = ?
+            LIMIT 1
+            `,
+            [department_id]
         );
 
         if (department.length === 0) {
             return res.status(404).json({
                 success: false,
-                message: "Selected department does not exist",
+                message: "Department not found",
             });
         }
 
-        // ------------------------------------------
-        // CHECK MANAGER
-        // ------------------------------------------
-
-        let managerId = null;
-
+        // Check manager if provided
         if (manager_id) {
             const [manager] = await pool.execute(
-                `SELECT id
-                 FROM employees
-                 WHERE id = ?
-                 LIMIT 1`,
-                [Number(manager_id)]
+                `
+                SELECT id
+                FROM employees
+                WHERE id = ?
+                LIMIT 1
+                `,
+                [manager_id]
             );
 
             if (manager.length === 0) {
                 return res.status(404).json({
                     success: false,
-                    message: "Selected manager does not exist",
+                    message: "Manager not found",
                 });
             }
-
-            managerId = Number(manager_id);
         }
 
-        // ------------------------------------------
-        // CREATE EMPLOYEE
-        // ------------------------------------------
-
         const [result] = await pool.execute(
-            `INSERT INTO employees (
+            `
+            INSERT INTO employees
+            (
                 employee_code,
                 first_name,
                 last_name,
@@ -188,171 +326,59 @@ const createEmployee = async (req, res) => {
                 emergency_contact_phone,
                 status
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            VALUES
+            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `,
             [
-                employee_code || null,
-                first_name.trim(),
-                last_name.trim(),
-                email.trim(),
-                phone?.trim() || null,
-                date_of_birth || null,
-                gender || null,
-                address?.trim() || null,
-                city?.trim() || null,
-                country?.trim() || "Pakistan",
-                Number(department_id),
-                position.trim(),
-                managerId,
-                joining_date,
-                employment_type || "Full Time",
-                salary ? Number(salary) : 0,
-                skills || null,
-                emergency_contact_name?.trim() || null,
-                emergency_contact_phone?.trim() || null,
-                status || "Active",
-            ]
-        );
-
-        // ------------------------------------------
-        // RESPONSE
-        // ------------------------------------------
-
-        res.status(201).json({
-            success: true,
-            message: "Employee added successfully",
-            employeeId: result.insertId,
-            employee: {
-                id: result.insertId,
                 employee_code,
                 first_name,
                 last_name,
                 email,
-                department_id: Number(department_id),
-                department_name: department[0].name,
+                phone || null,
+                date_of_birth || null,
+                gender || null,
+                address || null,
+                city || null,
+                country || null,
+                department_id,
                 position,
-                status: status || "Active",
-            },
-        });
-
-    } catch (error) {
-        console.error("================================");
-        console.error("CREATE EMPLOYEE ERROR");
-        console.error(error);
-        console.error("================================");
-
-        res.status(500).json({
-            success: false,
-            message: "Server error while adding employee",
-            error: error.message,
-        });
-    }
-};
-
-
-// ==========================================
-// GET ALL EMPLOYEES
-// ==========================================
-
-const getEmployees = async (req, res) => {
-    try {
-        const [employees] = await pool.execute(
-            `SELECT
-                e.id,
-                e.employee_code,
-                e.first_name,
-                e.last_name,
-                e.email,
-                e.phone,
-                e.date_of_birth,
-                e.gender,
-                e.address,
-                e.city,
-                e.country,
-                e.department_id,
-                d.name AS department_name,
-                e.position,
-                e.manager_id,
-                e.joining_date,
-                e.employment_type,
-                e.salary,
-                e.skills,
-                e.emergency_contact_name,
-                e.emergency_contact_phone,
-                e.profile_photo,
-                e.status,
-                e.created_at,
-                e.updated_at
-            FROM employees e
-            LEFT JOIN departments d
-                ON e.department_id = d.id
-            ORDER BY e.id DESC`
+                manager_id || null,
+                joining_date,
+                employment_type || "Full-time",
+                salary || 0,
+                skills || null,
+                emergency_contact_name || null,
+                emergency_contact_phone || null,
+                status,
+            ]
         );
 
-        res.status(200).json({
+        return res.status(201).json({
             success: true,
-            count: employees.length,
-            employees,
+            message: "Employee created successfully",
+            employeeId: result.insertId,
         });
 
     } catch (error) {
-        console.error("Get employees error:", error);
-
-        res.status(500).json({
-            success: false,
-            message: "Server error while fetching employees",
-            error: error.message,
-        });
-    }
-};
-
-
-// ==========================================
-// GET EMPLOYEE BY ID
-// ==========================================
-
-const getEmployeeById = async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        const [employees] = await pool.execute(
-            `SELECT
-                e.*,
-                d.name AS department_name
-            FROM employees e
-            LEFT JOIN departments d
-                ON e.department_id = d.id
-            WHERE e.id = ?
-            LIMIT 1`,
-            [id]
+        console.error(
+            "Create employee error:",
+            error
         );
 
-        if (employees.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "Employee not found",
-            });
-        }
-
-        res.status(200).json({
-            success: true,
-            employee: employees[0],
-        });
-
-    } catch (error) {
-        console.error("Get employee error:", error);
-
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
-            message: "Server error while fetching employee",
+            message: "Unable to create employee",
             error: error.message,
         });
     }
 };
 
 
-// ==========================================
-// UPDATE EMPLOYEE
-// ==========================================
+/*
+|--------------------------------------------------------------------------
+| UPDATE EMPLOYEE
+|--------------------------------------------------------------------------
+*/
 
 const updateEmployee = async (req, res) => {
     try {
@@ -381,15 +407,17 @@ const updateEmployee = async (req, res) => {
             status,
         } = req.body;
 
-        const [existingEmployee] = await pool.execute(
-            `SELECT id
-             FROM employees
-             WHERE id = ?
-             LIMIT 1`,
+        const [existing] = await pool.execute(
+            `
+            SELECT id
+            FROM employees
+            WHERE id = ?
+            LIMIT 1
+            `,
             [id]
         );
 
-        if (existingEmployee.length === 0) {
+        if (existing.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: "Employee not found",
@@ -397,7 +425,9 @@ const updateEmployee = async (req, res) => {
         }
 
         await pool.execute(
-            `UPDATE employees SET
+            `
+            UPDATE employees
+            SET
                 employee_code = ?,
                 first_name = ?,
                 last_name = ?,
@@ -418,9 +448,10 @@ const updateEmployee = async (req, res) => {
                 emergency_contact_name = ?,
                 emergency_contact_phone = ?,
                 status = ?
-            WHERE id = ?`,
+            WHERE id = ?
+            `,
             [
-                employee_code || null,
+                employee_code,
                 first_name,
                 last_name,
                 email,
@@ -429,12 +460,12 @@ const updateEmployee = async (req, res) => {
                 gender || null,
                 address || null,
                 city || null,
-                country || "Pakistan",
+                country || null,
                 department_id,
                 position,
                 manager_id || null,
                 joining_date,
-                employment_type || "Full Time",
+                employment_type || "Full-time",
                 salary || 0,
                 skills || null,
                 emergency_contact_name || null,
@@ -444,40 +475,47 @@ const updateEmployee = async (req, res) => {
             ]
         );
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             message: "Employee updated successfully",
         });
 
     } catch (error) {
-        console.error("Update employee error:", error);
+        console.error(
+            "Update employee error:",
+            error
+        );
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
-            message: "Server error while updating employee",
+            message: "Unable to update employee",
             error: error.message,
         });
     }
 };
 
 
-// ==========================================
-// DEACTIVATE EMPLOYEE
-// ==========================================
+/*
+|--------------------------------------------------------------------------
+| DELETE EMPLOYEE
+|--------------------------------------------------------------------------
+*/
 
 const deleteEmployee = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const [employee] = await pool.execute(
-            `SELECT id
-             FROM employees
-             WHERE id = ?
-             LIMIT 1`,
+        const [existing] = await pool.execute(
+            `
+            SELECT id
+            FROM employees
+            WHERE id = ?
+            LIMIT 1
+            `,
             [id]
         );
 
-        if (employee.length === 0) {
+        if (existing.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: "Employee not found",
@@ -485,23 +523,27 @@ const deleteEmployee = async (req, res) => {
         }
 
         await pool.execute(
-            `UPDATE employees
-             SET status = 'Inactive'
-             WHERE id = ?`,
+            `
+            DELETE FROM employees
+            WHERE id = ?
+            `,
             [id]
         );
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
-            message: "Employee deactivated successfully",
+            message: "Employee deleted successfully",
         });
 
     } catch (error) {
-        console.error("Delete employee error:", error);
+        console.error(
+            "Delete employee error:",
+            error
+        );
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
-            message: "Server error while deactivating employee",
+            message: "Unable to delete employee",
             error: error.message,
         });
     }
@@ -509,9 +551,9 @@ const deleteEmployee = async (req, res) => {
 
 
 module.exports = {
-    createEmployee,
     getEmployees,
     getEmployeeById,
+    createEmployee,
     updateEmployee,
     deleteEmployee,
 };

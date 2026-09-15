@@ -6,7 +6,7 @@ Content-Type: application/json
   "password": "Admin@123"
 }
 
-###3
+###
 
 GET http://localhost:5000/api/auth/me
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkFkbWluIiwiZW1wbG95ZWVfaWQiOm51bGwsImlhdCI6MTc4ODk0ODEyNCwiZXhwIjoxNzg5NTUyOTI0fQ.XdkRYntOUR310crTt15GKSksiPOIfJTSIpZ7OWcN4jk
@@ -31,4 +31,10 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6I
 ###
 
 GET http://localhost:5000/api/managers
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkFkbWluIiwiZW1wbG95ZWVfaWQiOm51bGwsImlhdCI6MTc4ODk0ODEyNCwiZXhwIjoxNzg5NTUyOTI0fQ.XdkRYntOUR310crTt15GKSksiPOIfJTSIpZ7OWcN4jk
+
+
+###
+
+GET http://localhost:5000/api/employees
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkFkbWluIiwiZW1wbG95ZWVfaWQiOm51bGwsImlhdCI6MTc4ODk0ODEyNCwiZXhwIjoxNzg5NTUyOTI0fQ.XdkRYntOUR310crTt15GKSksiPOIfJTSIpZ7OWcN4jk

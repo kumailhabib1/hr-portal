@@ -7,6 +7,7 @@ const employeeRoutes = require("./routes/employeeRoutes");
 const departmentRoutes = require("./routes/departmentRoutes");
 const managerRoutes = require("./routes/managerRoutes");
 const documentRoutes = require("./routes/documentRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes");
 
 const app = express();
 
@@ -25,53 +26,19 @@ app.use(
     })
 );
 
-/*
-|--------------------------------------------------------------------------
-| Static Upload Files
-|--------------------------------------------------------------------------
-*/
-
 app.use(
     "/uploads",
     express.static("uploads")
 );
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-*/
+app.use("/api/auth", authRoutes);
+app.use("/api/employees", employeeRoutes);
+app.use("/api/departments", departmentRoutes);
+app.use("/api/managers", managerRoutes);
+app.use("/api/documents", documentRoutes);
 
-app.use(
-    "/api/auth",
-    authRoutes
-);
-
-app.use(
-    "/api/employees",
-    employeeRoutes
-);
-
-app.use(
-    "/api/departments",
-    departmentRoutes
-);
-
-app.use(
-    "/api/managers",
-    managerRoutes
-);
-
-app.use(
-    "/api/documents",
-    documentRoutes
-);
-
-/*
-|--------------------------------------------------------------------------
-| Test Route
-|--------------------------------------------------------------------------
-*/
+// IMPORTANT
+app.use("/api/dashboard", dashboardRoutes);
 
 app.get("/", (req, res) => {
     res.json({

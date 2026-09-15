@@ -2,75 +2,45 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-/*
-|--------------------------------------------------------------------------
-| Upload Directory
-|--------------------------------------------------------------------------
-*/
-
-const uploadDir = path.join(
+// backend/uploads/documents
+const uploadDir = path.resolve(
     __dirname,
     "../../uploads/documents"
 );
 
-/*
-|--------------------------------------------------------------------------
-| Automatically Create Folder
-|--------------------------------------------------------------------------
-*/
+// Always make sure folder exists
+fs.mkdirSync(uploadDir, {
+    recursive: true,
+});
 
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, {
-        recursive: true,
-    });
-
-    console.log(
-        "Created upload directory:",
-        uploadDir
-    );
-}
-
-/*
-|--------------------------------------------------------------------------
-| Storage
-|--------------------------------------------------------------------------
-*/
+console.log("Document upload directory:", uploadDir);
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        /*
-         * Check again before every upload.
-         * This protects against the folder being deleted
-         * while the server is running.
-         */
-
-        if (!fs.existsSync(uploadDir)) {
+        try {
             fs.mkdirSync(uploadDir, {
                 recursive: true,
             });
-        }
 
-        cb(null, uploadDir);
+            cb(null, uploadDir);
+        } catch (error) {
+            cb(error);
+        }
     },
 
     filename: (req, file, cb) => {
-        const extension =
-            path.extname(file.originalname);
+        const extension = path
+            .extname(file.originalname)
+            .toLowerCase();
 
-        const randomName =
+        const filename =
             `${Date.now()}-${Math.round(
-                Math.random() * 1e9
+                Math.random() * 1000000000
             )}${extension}`;
 
-        cb(null, randomName);
+        cb(null, filename);
     },
 });
-
-/*
-|--------------------------------------------------------------------------
-| File Filter
-|--------------------------------------------------------------------------
-*/
 
 const fileFilter = (req, file, cb) => {
     const allowedExtensions = [
@@ -82,41 +52,26 @@ const fileFilter = (req, file, cb) => {
         ".docx",
     ];
 
-    const extension =
-        path.extname(
-            file.originalname
-        ).toLowerCase();
+    const extension = path
+        .extname(file.originalname)
+        .toLowerCase();
 
-    if (
-        allowedExtensions.includes(
-            extension
-        )
-    ) {
+    if (allowedExtensions.includes(extension)) {
         cb(null, true);
     } else {
         cb(
             new Error(
                 "Only PDF, JPG, JPEG, PNG, DOC and DOCX files are allowed."
-            ),
-            false
+            )
         );
     }
 };
 
-/*
-|--------------------------------------------------------------------------
-| Multer
-|--------------------------------------------------------------------------
-*/
-
 const upload = multer({
     storage,
-
     fileFilter,
-
     limits: {
-        fileSize:
-            10 * 1024 * 1024, // 10MB
+        fileSize: 10 * 1024 * 1024,
         files: 10,
     },
 });

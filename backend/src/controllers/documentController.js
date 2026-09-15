@@ -2,21 +2,9 @@ const pool = require("../config/db");
 const fs = require("fs");
 const path = require("path");
 
-/*
-|--------------------------------------------------------------------------
-| Upload Employee Documents
-|--------------------------------------------------------------------------
-*/
-
 const uploadDocuments = async (req, res) => {
     try {
         const { employeeId } = req.params;
-
-        /*
-        |--------------------------------------------------------------------------
-        | Validate Employee ID
-        |--------------------------------------------------------------------------
-        */
 
         if (!employeeId) {
             return res.status(400).json({
@@ -25,12 +13,7 @@ const uploadDocuments = async (req, res) => {
             });
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Check Employee
-        |--------------------------------------------------------------------------
-        */
-
+        // Check employee exists
         const [employees] = await pool.execute(
             `
             SELECT id
@@ -48,12 +31,6 @@ const uploadDocuments = async (req, res) => {
             });
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Check Files
-        |--------------------------------------------------------------------------
-        */
-
         const files = req.files || [];
 
         if (files.length === 0) {
@@ -63,44 +40,44 @@ const uploadDocuments = async (req, res) => {
             });
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Get Document Types
-        |--------------------------------------------------------------------------
-        */
-
-        const documentTypes = [];
-
-        for (let i = 0; i < files.length; i++) {
-            documentTypes.push(
-                req.body[`document_type_${i}`] ||
-                "Other Document"
-            );
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Save Documents
-        |--------------------------------------------------------------------------
-        */
-
         const savedDocuments = [];
 
-        for (
-            let i = 0;
-            i < files.length;
-            i++
-        ) {
+        for (let i = 0; i < files.length; i++) {
             const file = files[i];
 
-            const documentType =
-                documentTypes[i];
+            /*
+             * Frontend sends:
+             * document_type_0
+             * document_type_1
+             * etc.
+             */
+            const frontendType =
+                req.body[`document_type_${i}`] ||
+                "Other";
 
             /*
-            |--------------------------------------------------------------------------
-            | Relative Path
-            |--------------------------------------------------------------------------
-            */
+             * Your database allows only:
+             * Personal
+             * Contracts
+             * Payroll
+             * Attendance
+             * Performance
+             * Other
+             */
+
+            let documentCategory = "Other";
+
+            if (
+                frontendType === "CNIC / National ID" ||
+                frontendType === "Resume / CV" ||
+                frontendType === "Educational Certificate"
+            ) {
+                documentCategory = "Personal";
+            } else if (
+                frontendType === "Employment Contract"
+            ) {
+                documentCategory = "Contracts";
+            }
 
             const relativePath = path
                 .join(
@@ -110,63 +87,52 @@ const uploadDocuments = async (req, res) => {
                 )
                 .replace(/\\/g, "/");
 
-            /*
-            |--------------------------------------------------------------------------
-            | Insert Database Record
-            |--------------------------------------------------------------------------
-            */
-
-            const [result] =
-                await pool.execute(
-                    `
-                    INSERT INTO documents
-                    (
-                        employee_id,
-                        document_type,
-                        document_name,
-                        file_path,
-                        uploaded_by,
-                        status
-                    )
-                    VALUES (?, ?, ?, ?, ?, 'Pending')
-                    `,
-                    [
-                        employeeId,
-                        documentType,
-                        file.originalname,
-                        relativePath,
-                        req.user.id,
-                    ]
-                );
+            const [result] = await pool.execute(
+                `
+                INSERT INTO documents
+                (
+                    employee_id,
+                    document_name,
+                    document_category,
+                    file_name,
+                    file_path,
+                    file_type,
+                    file_size,
+                    uploaded_by,
+                    status
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Pending')
+                `,
+                [
+                    employeeId,
+                    frontendType,
+                    documentCategory,
+                    file.filename,
+                    relativePath,
+                    file.mimetype,
+                    file.size,
+                    req.user.id,
+                ]
+            );
 
             savedDocuments.push({
                 id: result.insertId,
-                employee_id: Number(
-                    employeeId
-                ),
-                document_type:
-                    documentType,
-                document_name:
-                    file.originalname,
-                file_path:
-                    relativePath,
-                size: file.size,
+                employee_id: Number(employeeId),
+                document_name: frontendType,
+                document_category: documentCategory,
+                file_name: file.filename,
+                file_path: relativePath,
+                file_type: file.mimetype,
+                file_size: file.size,
+                status: "Pending",
             });
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Response
-        |--------------------------------------------------------------------------
-        */
-
         return res.status(201).json({
             success: true,
-            message:
-                "Documents uploaded successfully",
+            message: "Documents uploaded successfully",
             count: savedDocuments.length,
-            documents:
-                savedDocuments,
+            documents: savedDocuments,
         });
 
     } catch (error) {
@@ -175,23 +141,12 @@ const uploadDocuments = async (req, res) => {
             error
         );
 
-        /*
-        |--------------------------------------------------------------------------
-        | Remove Uploaded Files If DB Fails
-        |--------------------------------------------------------------------------
-        */
-
+        // Remove uploaded files if database insertion fails
         if (req.files) {
             for (const file of req.files) {
                 try {
-                    if (
-                        fs.existsSync(
-                            file.path
-                        )
-                    ) {
-                        fs.unlinkSync(
-                            file.path
-                        );
+                    if (fs.existsSync(file.path)) {
+                        fs.unlinkSync(file.path);
                     }
                 } catch (deleteError) {
                     console.error(
@@ -211,40 +166,40 @@ const uploadDocuments = async (req, res) => {
     }
 };
 
+
 /*
 |--------------------------------------------------------------------------
-| Get Employee Documents
+| GET EMPLOYEE DOCUMENTS
 |--------------------------------------------------------------------------
 */
 
-const getEmployeeDocuments = async (
-    req,
-    res
-) => {
+const getEmployeeDocuments = async (req, res) => {
     try {
-        const { employeeId } =
-            req.params;
+        const { employeeId } = req.params;
 
-        const [documents] =
-            await pool.execute(
-                `
-                SELECT
-                    d.id,
-                    d.employee_id,
-                    d.document_type,
-                    d.document_name,
-                    d.file_path,
-                    d.status,
-                    d.uploaded_at,
-                    u.email AS uploaded_by_email
-                FROM documents d
-                LEFT JOIN users u
-                    ON d.uploaded_by = u.id
-                WHERE d.employee_id = ?
-                ORDER BY d.uploaded_at DESC
-                `,
-                [employeeId]
-            );
+        const [documents] = await pool.execute(
+            `
+            SELECT
+                d.id,
+                d.employee_id,
+                d.document_name,
+                d.document_category,
+                d.file_name,
+                d.file_path,
+                d.file_type,
+                d.file_size,
+                d.status,
+                d.uploaded_by,
+                d.created_at,
+                u.email AS uploaded_by_email
+            FROM documents d
+            LEFT JOIN users u
+                ON d.uploaded_by = u.id
+            WHERE d.employee_id = ?
+            ORDER BY d.created_at DESC
+            `,
+            [employeeId]
+        );
 
         return res.status(200).json({
             success: true,
@@ -262,35 +217,33 @@ const getEmployeeDocuments = async (
             success: false,
             message:
                 "Unable to load employee documents",
+            error: error.message,
         });
     }
 };
 
+
 /*
 |--------------------------------------------------------------------------
-| Delete Document
+| DELETE DOCUMENT
 |--------------------------------------------------------------------------
 */
 
-const deleteDocument = async (
-    req,
-    res
-) => {
+const deleteDocument = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const [documents] =
-            await pool.execute(
-                `
-                SELECT
-                    id,
-                    file_path
-                FROM documents
-                WHERE id = ?
-                LIMIT 1
-                `,
-                [id]
-            );
+        const [documents] = await pool.execute(
+            `
+            SELECT
+                id,
+                file_path
+            FROM documents
+            WHERE id = ?
+            LIMIT 1
+            `,
+            [id]
+        );
 
         if (documents.length === 0) {
             return res.status(404).json({
@@ -299,32 +252,17 @@ const deleteDocument = async (
             });
         }
 
-        const document =
-            documents[0];
+        const document = documents[0];
 
-        /*
-        |--------------------------------------------------------------------------
-        | Delete Physical File
-        |--------------------------------------------------------------------------
-        */
-
-        const filePath = path.join(
+        const filePath = path.resolve(
             __dirname,
             "../../",
             document.file_path
         );
 
-        if (
-            fs.existsSync(filePath)
-        ) {
+        if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Delete Database Record
-        |--------------------------------------------------------------------------
-        */
 
         await pool.execute(
             `
@@ -350,9 +288,11 @@ const deleteDocument = async (
             success: false,
             message:
                 "Unable to delete document",
+            error: error.message,
         });
     }
 };
+
 
 module.exports = {
     uploadDocuments,
