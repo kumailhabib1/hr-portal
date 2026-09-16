@@ -9,13 +9,13 @@ Content-Type: application/json
 ###
 
 GET http://localhost:5000/api/auth/me
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkFkbWluIiwiZW1wbG95ZWVfaWQiOm51bGwsImlhdCI6MTc4ODk0ODEyNCwiZXhwIjoxNzg5NTUyOTI0fQ.XdkRYntOUR310crTt15GKSksiPOIfJTSIpZ7OWcN4jk
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkFkbWluIiwiZW1wbG95ZWVfaWQiOm51bGwsImVtcGxveWVlX2NvZGUiOm51bGwsImlhdCI6MTc4OTU1NDc1NCwiZXhwIjoxNzkwMTU5NTU0fQ.65MP1L7TqamlkrhlNSBDqyfZ0kXwEOyn3g9EXhMNknE
 
 
 ###
 
 GET http://localhost:5000/api/dashboard/summary
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkFkbWluIiwiZW1wbG95ZWVfaWQiOm51bGwsImlhdCI6MTc4ODk0ODEyNCwiZXhwIjoxNzg5NTUyOTI0fQ.XdkRYntOUR310crTt15GKSksiPOIfJTSIpZ7OWcN4jk
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkFkbWluIiwiZW1wbG95ZWVfaWQiOm51bGwsImVtcGxveWVlX2NvZGUiOm51bGwsImlhdCI6MTc4OTU1NDc1NCwiZXhwIjoxNzkwMTU5NTU0fQ.65MP1L7TqamlkrhlNSBDqyfZ0kXwEOyn3g9EXhMNknE
 
 
 ###
@@ -108,7 +108,13 @@ Content-Type: application/json
 
 ### Delete Attendance
 DELETE http://localhost:5000/api/attendance/1
-Authorization: Bearer YOUR_TOKEN
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkFkbWluIiwiZW1wbG95ZWVfaWQiOm51bGwsImlhdCI6MTc4ODk0ODEyNCwiZXhwIjoxNzg5NTUyOTI0fQ.XdkRYntOUR310crTt15GKSksiPOIfJTSIpZ7OWcN4jk
+
+
+###
+
+GET http://localhost:5000/api/leaves
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkFkbWluIiwiZW1wbG95ZWVfaWQiOm51bGwsImlhdCI6MTc4ODk0ODEyNCwiZXhwIjoxNzg5NTUyOTI0fQ.XdkRYntOUR310crTt15GKSksiPOIfJTSIpZ7OWcN4jk
 
 
 

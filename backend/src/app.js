@@ -9,6 +9,7 @@ const managerRoutes = require("./routes/managerRoutes");
 const documentRoutes = require("./routes/documentRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const authMiddleware = require("./middleware/authMiddleware");
+const leaveRoutes = require("./routes/leaveRoutes");
 const attendanceRoutes =
     require("./routes/attendanceRoutes");
 
@@ -41,6 +42,7 @@ app.use("/api/departments", departmentRoutes);
 app.use("/api/managers", managerRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/attendance", attendanceRoutes); 
+app.use("/api/leaves", leaveRoutes);
 // IMPORTANT
 app.use("/api/dashboard", dashboardRoutes);
 
