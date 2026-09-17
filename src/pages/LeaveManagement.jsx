@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Modal from "../components/Modal";
 import {
   CalendarDays,
@@ -15,138 +15,64 @@ import {
   Plane,
 } from "lucide-react";
 
-const departments = [
-  { name: "All Departments", count: 48 },
-  { name: "Engineering", count: 12 },
-  { name: "Human Resources", count: 6 },
-  { name: "Marketing", count: 8 },
-  { name: "Finance", count: 7 },
-  { name: "Operations", count: 9 },
-  { name: "Design", count: 6 },
-];
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
-const leaveRequests = [
-  {
-    id: "LV-001",
-    employeeId: "EMP-001",
-    name: "Ahmed Khan",
-    initials: "AK",
-    position: "Senior Software Engineer",
-    department: "Engineering",
-    type: "Annual Leave",
-    from: "01 Sep 2026",
-    to: "03 Sep 2026",
-    days: 3,
-    reason: "Family vacation",
-    applied: "27 Aug 2026",
-    status: "Pending",
-  },
-  {
-    id: "LV-002",
-    employeeId: "EMP-002",
-    name: "Bilal Shah",
-    initials: "BS",
-    position: "Frontend Developer",
-    department: "Engineering",
-    type: "Sick Leave",
-    from: "28 Aug 2026",
-    to: "29 Aug 2026",
-    days: 2,
-    reason: "Not feeling well",
-    applied: "28 Aug 2026",
-    status: "Approved",
-  },
-  {
-    id: "LV-003",
-    employeeId: "EMP-003",
-    name: "Sara Hassan",
-    initials: "SH",
-    position: "HR Manager",
-    department: "Human Resources",
-    type: "Casual Leave",
-    from: "02 Sep 2026",
-    to: "02 Sep 2026",
-    days: 1,
-    reason: "Personal work",
-    applied: "26 Aug 2026",
-    status: "Pending",
-  },
-  {
-    id: "LV-004",
-    employeeId: "EMP-004",
-    name: "Fatima Noor",
-    initials: "FN",
-    position: "HR Executive",
-    department: "Human Resources",
-    type: "Annual Leave",
-    from: "05 Sep 2026",
-    to: "09 Sep 2026",
-    days: 5,
-    reason: "Travel",
-    applied: "25 Aug 2026",
-    status: "Rejected",
-  },
-  {
-    id: "LV-005",
-    employeeId: "EMP-005",
-    name: "Muhammad Ali",
-    initials: "MA",
-    position: "Marketing Executive",
-    department: "Marketing",
-    type: "Casual Leave",
-    from: "31 Aug 2026",
-    to: "31 Aug 2026",
-    days: 1,
-    reason: "Personal appointment",
-    applied: "27 Aug 2026",
-    status: "Pending",
-  },
-  {
-    id: "LV-006",
-    employeeId: "EMP-006",
-    name: "Ayesha Malik",
-    initials: "AM",
-    position: "Financial Analyst",
-    department: "Finance",
-    type: "Sick Leave",
-    from: "27 Aug 2026",
-    to: "28 Aug 2026",
-    days: 2,
-    reason: "Medical rest",
-    applied: "27 Aug 2026",
-    status: "Approved",
-  },
-  {
-    id: "LV-007",
-    employeeId: "EMP-007",
-    name: "Usman Ahmed",
-    initials: "UA",
-    position: "Operations Manager",
-    department: "Operations",
-    type: "Annual Leave",
-    from: "10 Sep 2026",
-    to: "14 Sep 2026",
-    days: 5,
-    reason: "Family trip",
-    applied: "24 Aug 2026",
-    status: "Pending",
-  },
-  {
-    id: "LV-008",
-    employeeId: "EMP-008",
-    name: "Hina Raza",
-    initials: "HR",
-    position: "UI/UX Designer",
-    department: "Design",
-    type: "Casual Leave",
-    from: "30 Aug 2026",
-    to: "30 Aug 2026",
-    days: 1,
-    reason: "Personal work",
-    applied: "26 Aug 2026",
-    status: "Rejected",
-  },
-];
+const getToken = () =>
+  localStorage.getItem("token") ||
+  localStorage.getItem("authToken") ||
+  sessionStorage.getItem("token") ||
+  sessionStorage.getItem("authToken") ||
+  "";
+
+const formatDate = (value) => {
+  if (!value) return "-";
+  const date = new Date(
+    typeof value === "string" && value.length <= 10
+      ? `${value}T00:00:00`
+      : value
+  );
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const calculateDays = (start, end) => {
+  if (!start || !end) return 0;
+  const startDate = new Date(`${String(start).slice(0, 10)}T00:00:00`);
+  const endDate = new Date(`${String(end).slice(0, 10)}T00:00:00`);
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return 0;
+  return Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+};
+
+const mapLeaveRequest = (leave) => {
+  const firstName = leave.first_name || "";
+  const lastName = leave.last_name || "";
+  const fullName = `${firstName} ${lastName}`.trim() || "Unknown Employee";
+  const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || "NA";
+
+  return {
+    id: leave.id,
+    employeeId: leave.employee_code || (leave.employee_id ? `EMP-${leave.employee_id}` : "Unknown"),
+    name: fullName,
+    initials,
+    position: leave.position || "Employee",
+    department: leave.department_name || "Unassigned",
+    type: leave.leave_type || "Leave",
+    from: formatDate(leave.start_date),
+    to: formatDate(leave.end_date),
+    days:
+      leave.total_days !== undefined && leave.total_days !== null
+        ? Number(leave.total_days)
+        : calculateDays(leave.start_date, leave.end_date),
+    reason: leave.reason || "No reason provided",
+    applied: formatDate(leave.created_at),
+    status: leave.status || "Pending",
+    backendData: leave,
+  };
+};
 
 const statusConfig = {
   Pending: {
@@ -230,7 +156,64 @@ function LeaveManagement() {
   const [search, setSearch] = useState("");
   const [selectedRequest, setSelectedRequest] = useState(null);
 
-  const [requests, setRequests] = useState(leaveRequests);
+  const [requests, setRequests] = useState([]);
+
+  const loadLeaves = useCallback(async () => {
+    try {
+      const token = getToken();
+      if (!token) {
+        console.error("Leave Management: authentication token not found.");
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/leaves`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to load leave requests");
+      }
+
+      const leaves = Array.isArray(data)
+        ? data
+        : Array.isArray(data.leaves)
+          ? data.leaves
+          : Array.isArray(data.data)
+            ? data.data
+            : [];
+
+      setRequests(leaves.map(mapLeaveRequest));
+    } catch (error) {
+      console.error("Load leave requests error:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadLeaves();
+  }, [loadLeaves]);
+
+  const departmentNames = [
+    "Engineering",
+    "Human Resources",
+    "Marketing",
+    "Finance",
+    "Operations",
+    "Design",
+  ];
+
+  const departments = [
+    { name: "All Departments", count: requests.length },
+    ...departmentNames.map((name) => ({
+      name,
+      count: requests.filter((request) => request.department === name).length,
+    })),
+  ];
 
   const filteredRequests = useMemo(() => {
     return requests.filter((request) => {
@@ -250,12 +233,48 @@ function LeaveManagement() {
     });
   }, [requests, activeTab, department, search]);
 
-  const updateStatus = (id, status) => {
-    setRequests((current) =>
-      current.map((request) =>
-        request.id === id ? { ...request, status } : request
-      )
-    );
+  const updateStatus = async (id, status) => {
+    try {
+      const token = getToken();
+
+      if (!token) {
+        alert("Authentication token not found. Please login again.");
+        return;
+      }
+
+      let endpoint = "";
+      const options = {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      };
+
+      if (status === "Approved") {
+        endpoint = `${API_BASE_URL}/leaves/${id}/approve`;
+      } else if (status === "Rejected") {
+        endpoint = `${API_BASE_URL}/leaves/${id}/reject`;
+        options.body = JSON.stringify({
+          rejection_reason: "Leave request rejected by HR",
+        });
+      } else {
+        return;
+      }
+
+      const response = await fetch(endpoint, options);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || `Failed to ${status.toLowerCase()} leave`);
+      }
+
+      await loadLeaves();
+      setSelectedRequest(null);
+    } catch (error) {
+      console.error("Update leave status error:", error);
+      alert(error.message || "Failed to update leave status");
+    }
   };
 
   const pendingCount = requests.filter(
