@@ -111,10 +111,35 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6I
 ###
 
 GET http://localhost:5000/api/leaves
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkFkbWluIiwiZW1wbG95ZWVfaWQiOm51bGwsImVtcGxveWVlX2NvZGUiOm51bGwsImlhdCI6MTc4OTU1NDc1NCwiZXhwIjoxNzkwMTU5NTU0fQ.65MP1L7TqamlkrhlNSBDqyfZ0kXwEOyn3g9EXhMNknE       
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkFkbWluIiwiZW1wbG95ZWVfaWQiOm51bGwsImVtcGxveWVlX2NvZGUiOm51bGwsImlhdCI6MTc4OTU1NDc1NCwiZXhwIjoxNzkwMTU5NTU0fQ.65MP1L7TqamlkrhlNSBDqyfZ0kXwEOyn3g9EXhMNknE   
 
+###
 
+GET http://localhost:5000/api/payroll
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkFkbWluIiwiZW1wbG95ZWVfaWQiOm51bGwsImVtcGxveWVlX2NvZGUiOm51bGwsImlhdCI6MTc4OTU1NDc1NCwiZXhwIjoxNzkwMTU5NTU0fQ.65MP1L7TqamlkrhlNSBDqyfZ0kXwEOyn3g9EXhMNknE   
 
+###
+
+POST http://localhost:5000/api/payroll
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkFkbWluIiwiZW1wbG95ZWVfaWQiOm51bGwsImVtcGxveWVlX2NvZGUiOm51bGwsImlhdCI6MTc4OTU1NDc1NCwiZXhwIjoxNzkwMTU5NTU0fQ.65MP1L7TqamlkrhlNSBDqyfZ0kXwEOyn3g9EXhMNknE
+Content-Type: application/json
+
+{
+  "employee_id": 2,
+  "payroll_month": "2026-09-01",
+
+  "house_allowance": 5000,
+  "transport_allowance": 3000,
+  "other_allowance": 2000,
+
+  "overtime": 0,
+  "bonus": 0,
+
+  "tax_deduction": 1000,
+  "loan_deduction": 500,
+  "advance_deduction": 1000,
+  "other_deduction": 200
+}
 
 
 
