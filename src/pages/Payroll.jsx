@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
   Users,
@@ -15,121 +15,72 @@ import {
   Receipt,
 } from "lucide-react";
 
-const departments = [
-  { name: "All Departments", count: 48 },
-  { name: "Engineering", count: 12 },
-  { name: "Human Resources", count: 6 },
-  { name: "Marketing", count: 8 },
-  { name: "Finance", count: 7 },
-  { name: "Operations", count: 9 },
-  { name: "Design", count: 6 },
-];
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-const payrollData = [
-  {
-    id: "EMP-001",
-    name: "Ahmed Khan",
-    initials: "AK",
-    position: "Senior Software Engineer",
-    department: "Engineering",
-    basicSalary: 180000,
-    allowances: 35000,
-    deductions: 15000,
-    netSalary: 200000,
-    status: "Paid",
-  },
-  {
-    id: "EMP-002",
-    name: "Bilal Shah",
-    initials: "BS",
-    position: "Frontend Developer",
-    department: "Engineering",
-    basicSalary: 140000,
-    allowances: 25000,
-    deductions: 10000,
-    netSalary: 155000,
-    status: "Pending",
-  },
-  {
-    id: "EMP-003",
-    name: "Sara Hassan",
-    initials: "SH",
-    position: "HR Manager",
-    department: "Human Resources",
-    basicSalary: 165000,
-    allowances: 30000,
-    deductions: 12000,
-    netSalary: 183000,
-    status: "Paid",
-  },
-  {
-    id: "EMP-004",
-    name: "Fatima Noor",
-    initials: "FN",
-    position: "HR Executive",
-    department: "Human Resources",
-    basicSalary: 95000,
-    allowances: 15000,
-    deductions: 7000,
-    netSalary: 103000,
-    status: "Processing",
-  },
-  {
-    id: "EMP-005",
-    name: "Muhammad Ali",
-    initials: "MA",
-    position: "Marketing Executive",
-    department: "Marketing",
-    basicSalary: 120000,
-    allowances: 22000,
-    deductions: 9000,
-    netSalary: 133000,
-    status: "Paid",
-  },
-  {
-    id: "EMP-006",
-    name: "Ayesha Malik",
-    initials: "AM",
-    position: "Financial Analyst",
-    department: "Finance",
-    basicSalary: 135000,
-    allowances: 20000,
-    deductions: 10000,
-    netSalary: 145000,
-    status: "Pending",
-  },
-  {
-    id: "EMP-007",
-    name: "Usman Ahmed",
-    initials: "UA",
-    position: "Operations Manager",
-    department: "Operations",
-    basicSalary: 155000,
-    allowances: 28000,
-    deductions: 13000,
-    netSalary: 170000,
-    status: "Paid",
-  },
-  {
-    id: "EMP-008",
-    name: "Hina Raza",
-    initials: "HR",
-    position: "UI/UX Designer",
-    department: "Design",
-    basicSalary: 115000,
-    allowances: 18000,
-    deductions: 8000,
-    netSalary: 125000,
-    status: "Processing",
-  },
-];
+const getToken = () =>
+  localStorage.getItem("token") ||
+  sessionStorage.getItem("token") ||
+  localStorage.getItem("authToken") ||
+  sessionStorage.getItem("authToken");
 
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat("en-PK", {
     style: "currency",
     currency: "PKR",
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(Number(amount || 0));
+};
+
+const getMonthValue = (label) => {
+  const [monthName, year] = label.split(" ");
+  const monthIndex =
+    new Date(`${monthName} 1, ${year}`).getMonth() + 1;
+
+  return {
+    month: monthIndex,
+    year: Number(year),
+  };
+};
+
+const formatPayrollRecord = (record) => {
+  const firstName = record.first_name || "";
+  const lastName = record.last_name || "";
+  const name =
+    `${firstName} ${lastName}`.trim() ||
+    record.employee_code ||
+    "Unknown Employee";
+
+  const initials =
+    `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() ||
+    "NA";
+
+  return {
+    ...record,
+    id: record.employee_code || `PAY-${record.id}`,
+    payrollId: record.id,
+    name,
+    initials,
+    position: record.position || "—",
+    department: record.department_name || "Unassigned",
+    basicSalary: Number(record.basic_salary || 0),
+    allowances: Number(
+      record.allowances ??
+        Number(record.house_allowance || 0) +
+          Number(record.transport_allowance || 0) +
+          Number(record.other_allowance || 0)
+    ),
+    deductions: Number(
+      record.total_deduction ??
+        record.deductions ??
+        0
+    ),
+    netSalary: Number(record.net_salary || 0),
+    status:
+      record.payment_status === "Processed"
+        ? "Processing"
+        : record.payment_status || "Pending",
+  };
 };
 
 function StatusBadge({ status }) {
@@ -147,7 +98,7 @@ function StatusBadge({ status }) {
     >
       {status === "Paid" && <CheckCircle2 size={13} />}
       {status === "Pending" && <Clock3 size={13} />}
-      {status === "Processing" && <TrendingUp size={13} />}
+      {(status === "Processing" || status === "Processed") && <TrendingUp size={13} />}
       {status}
     </span>
   );
@@ -158,29 +109,121 @@ function Payroll() {
     useState("All Departments");
 
   const [selectedMonth, setSelectedMonth] =
-    useState("August 2026");
+    useState("September 2026");
 
   const [search, setSearch] = useState("");
 
   const [selectedStatus, setSelectedStatus] =
     useState("All");
 
-  const filteredPayroll = payrollData.filter((employee) => {
-    const departmentMatch =
-      selectedDepartment === "All Departments" ||
-      employee.department === selectedDepartment;
+  const [payrollData, setPayrollData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState("");
 
-    const statusMatch =
-      selectedStatus === "All" ||
-      employee.status === selectedStatus;
+  const monthInfo = useMemo(
+    () => getMonthValue(selectedMonth),
+    [selectedMonth]
+  );
 
-    const searchMatch =
-      employee.name.toLowerCase().includes(search.toLowerCase()) ||
-      employee.id.toLowerCase().includes(search.toLowerCase()) ||
-      employee.department.toLowerCase().includes(search.toLowerCase());
+  const loadPayroll = useCallback(async () => {
+    const token = getToken();
 
-    return departmentMatch && statusMatch && searchMatch;
-  });
+    if (!token) {
+      setError("Authentication token not found. Please login again.");
+      setPayrollData([]);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError("");
+
+      const params = new URLSearchParams({
+        month: String(monthInfo.month),
+        year: String(monthInfo.year),
+      });
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/payroll?${params.toString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.status === 401) {
+        throw new Error("Session expired. Please login again.");
+      }
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Failed to load payroll");
+      }
+
+      setPayrollData(
+        Array.isArray(data.payroll)
+          ? data.payroll.map(formatPayrollRecord)
+          : []
+      );
+    } catch (err) {
+      console.error("Payroll load error:", err);
+      setError(err.message || "Failed to load payroll");
+      setPayrollData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [monthInfo]);
+
+  useEffect(() => {
+    loadPayroll();
+  }, [loadPayroll]);
+
+  const departments = useMemo(() => {
+    const counts = payrollData.reduce((acc, employee) => {
+      acc[employee.department] =
+        (acc[employee.department] || 0) + 1;
+      return acc;
+    }, {});
+
+    return [
+      { name: "All Departments", count: payrollData.length },
+      ...Object.entries(counts).map(([name, count]) => ({
+        name,
+        count,
+      })),
+    ];
+  }, [payrollData]);
+
+  const filteredPayroll = useMemo(() => {
+    const value = search.toLowerCase().trim();
+
+    return payrollData.filter((employee) => {
+      const departmentMatch =
+        selectedDepartment === "All Departments" ||
+        employee.department === selectedDepartment;
+
+      const statusMatch =
+        selectedStatus === "All" ||
+        employee.status === selectedStatus;
+
+      const searchMatch =
+        !value ||
+        employee.name.toLowerCase().includes(value) ||
+        employee.id.toLowerCase().includes(value) ||
+        employee.department.toLowerCase().includes(value);
+
+      return departmentMatch && statusMatch && searchMatch;
+    });
+  }, [
+    payrollData,
+    selectedDepartment,
+    selectedStatus,
+    search,
+  ]);
 
   const totalPayroll = payrollData.reduce(
     (total, employee) => total + employee.netSalary,
@@ -209,6 +252,249 @@ function Payroll() {
   const pendingCount = payrollData.filter(
     (employee) => employee.status === "Pending"
   ).length;
+
+  const processPayroll = async () => {
+    const token = getToken();
+
+    if (!token) {
+      setError("Authentication token not found. Please login again.");
+      return;
+    }
+
+    const pending = filteredPayroll.filter(
+      (employee) => employee.status === "Pending"
+    );
+
+    if (pending.length === 0) {
+      setError("There are no pending payroll records to process.");
+      return;
+    }
+
+    try {
+      setProcessing(true);
+      setError("");
+
+      for (const employee of pending) {
+        const response = await fetch(
+          `${API_BASE_URL}/api/payroll/${employee.payrollId}/process`,
+          {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(
+            data.message || `Failed to process ${employee.id}`
+          );
+        }
+      }
+
+      await loadPayroll();
+    } catch (err) {
+      console.error("Process payroll error:", err);
+      setError(err.message || "Failed to process payroll");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const viewPayslip = async (employee) => {
+    const token = getToken();
+
+    if (!token) {
+      setError("Authentication token not found. Please login again.");
+      return;
+    }
+
+    try {
+      setError("");
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/payroll/${employee.payrollId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Failed to load payslip");
+      }
+
+      const payroll = data.payroll;
+
+      const payslipWindow = window.open(
+        "",
+        "_blank",
+        "width=850,height=700"
+      );
+
+      if (!payslipWindow) {
+        throw new Error(
+          "Popup blocked. Please allow popups to view the payslip."
+        );
+      }
+
+      payslipWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Payslip - ${payroll.employee_code}</title>
+          <style>
+            body{font-family:Arial,sans-serif;margin:40px;color:#0f172a}
+            .muted{color:#64748b}
+            .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:25px 0}
+            .card{border:1px solid #e2e8f0;padding:14px;border-radius:10px}
+            .label{color:#64748b;font-size:12px;margin-bottom:5px}
+            .value{font-size:17px;font-weight:bold}
+            .total{background:#eef2ff;padding:20px;border-radius:12px}
+            button{padding:10px 16px;border:0;border-radius:8px;background:#4f46e5;color:white;cursor:pointer}
+            @media print{button{display:none}}
+          </style>
+        </head>
+        <body>
+          <h1>Nexora HR</h1>
+          <div class="muted">Employee Payslip</div>
+
+          <div class="grid">
+            <div class="card">
+              <div class="label">Employee</div>
+              <div class="value">
+                ${payroll.first_name || ""} ${payroll.last_name || ""}
+              </div>
+            </div>
+            <div class="card">
+              <div class="label">Employee Code</div>
+              <div class="value">${payroll.employee_code || ""}</div>
+            </div>
+            <div class="card">
+              <div class="label">Department</div>
+              <div class="value">${payroll.department_name || "—"}</div>
+            </div>
+            <div class="card">
+              <div class="label">Payroll Month</div>
+              <div class="value">${payroll.payroll_month || ""}</div>
+            </div>
+          </div>
+
+          <div class="grid">
+            <div class="card">
+              <div class="label">Basic Salary</div>
+              <div class="value">${formatCurrency(payroll.basic_salary)}</div>
+            </div>
+            <div class="card">
+              <div class="label">Allowances</div>
+              <div class="value">${formatCurrency(payroll.allowances)}</div>
+            </div>
+            <div class="card">
+              <div class="label">Gross Salary</div>
+              <div class="value">${formatCurrency(payroll.gross_salary)}</div>
+            </div>
+            <div class="card">
+              <div class="label">Total Deductions</div>
+              <div class="value">${formatCurrency(payroll.total_deduction)}</div>
+            </div>
+          </div>
+
+          <div class="total">
+            <div class="label">NET SALARY</div>
+            <div class="value">${formatCurrency(payroll.net_salary)}</div>
+          </div>
+
+          <br />
+          <button onclick="window.print()">Print Payslip</button>
+        </body>
+        </html>
+      `);
+
+      payslipWindow.document.close();
+    } catch (err) {
+      console.error("Payslip error:", err);
+      setError(err.message || "Failed to load payslip");
+    }
+  };
+
+  const downloadPayslip = async (employee) => {
+    const token = getToken();
+
+    if (!token) {
+      setError("Authentication token not found. Please login again.");
+      return;
+    }
+
+    try {
+      setError("");
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/payroll/${employee.payrollId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Failed to download payslip");
+      }
+
+      const payroll = data.payroll;
+
+      const content = [
+        "NEXORA HR - EMPLOYEE PAYSLIP",
+        "================================",
+        `Employee: ${payroll.first_name || ""} ${payroll.last_name || ""}`,
+        `Employee Code: ${payroll.employee_code || ""}`,
+        `Department: ${payroll.department_name || "—"}`,
+        `Payroll Month: ${payroll.payroll_month || ""}`,
+        "",
+        `Basic Salary: ${formatCurrency(payroll.basic_salary)}`,
+        `Allowances: ${formatCurrency(payroll.allowances)}`,
+        `Gross Salary: ${formatCurrency(payroll.gross_salary)}`,
+        `Tax Deduction: ${formatCurrency(payroll.tax_deduction)}`,
+        `Loan Deduction: ${formatCurrency(payroll.loan_deduction)}`,
+        `Late Deduction: ${formatCurrency(payroll.late_deduction)}`,
+        `Unpaid Leave Deduction: ${formatCurrency(payroll.unpaid_leave_deduction)}`,
+        `Advance Deduction: ${formatCurrency(payroll.advance_deduction)}`,
+        `Other Deduction: ${formatCurrency(payroll.other_deduction)}`,
+        `Total Deduction: ${formatCurrency(payroll.total_deduction)}`,
+        "",
+        `NET SALARY: ${formatCurrency(payroll.net_salary)}`,
+        `Payment Status: ${payroll.payment_status || ""}`,
+      ].join("\n");
+
+      const blob = new Blob([content], {
+        type: "text/plain;charset=utf-8",
+      });
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download =
+        `payslip-${payroll.employee_code || employee.id}-${String(
+          payroll.payroll_month || ""
+        ).slice(0, 7)}.txt`;
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Download payslip error:", err);
+      setError(err.message || "Failed to download payslip");
+    }
+  };
 
   return (
     <div className="payroll-page min-h-screen overflow-x-hidden bg-slate-50 p-4 text-slate-900 transition-colors duration-300 dark:bg-[#080d18] dark:text-slate-100 sm:p-6 lg:p-8">
@@ -273,18 +559,40 @@ function Payroll() {
         </button>
 
         <button
+          onClick={processPayroll}
+          disabled={processing || loading}
           className="
             flex items-center justify-center gap-2 rounded-xl
             bg-indigo-600 px-5 py-3 text-sm font-semibold
             text-white shadow-lg shadow-indigo-600/20
             transition hover:bg-indigo-700
+            disabled:cursor-not-allowed disabled:opacity-60
           "
         >
           <Banknote size={17} />
-          Process Payroll
+          {processing ? "Processing..." : "Process Payroll"}
         </button>
 
       </div>
+
+      {error && (
+        <div className="mb-6 flex items-center justify-between gap-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <span>{error}</span>
+          <button
+            type="button"
+            onClick={() => setError("")}
+            className="font-semibold hover:text-red-900"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {loading && (
+        <div className="mb-6 rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm text-indigo-700">
+          Loading payroll data...
+        </div>
+      )}
 
       {/* SUMMARY CARDS */}
       <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -299,7 +607,7 @@ function Payroll() {
             </div>
 
             <span className="text-xs font-semibold text-indigo-600">
-              August
+              {selectedMonth.split(" ")[0]}
             </span>
 
           </div>
@@ -593,6 +901,7 @@ function Payroll() {
                     focus:border-indigo-400
                   "
                 >
+                  <option>September 2026</option>
                   <option>August 2026</option>
                   <option>July 2026</option>
                   <option>June 2026</option>
@@ -809,6 +1118,7 @@ function Payroll() {
 
                       <button
                         title="View Payslip"
+                        onClick={() => viewPayslip(employee)}
                         className="
                           flex h-9 w-9 items-center justify-center
                           rounded-lg border border-slate-200
@@ -823,6 +1133,7 @@ function Payroll() {
 
                       <button
                         title="Download Payslip"
+                        onClick={() => downloadPayslip(employee)}
                         className="
                           flex h-9 w-9 items-center justify-center
                           rounded-lg border border-slate-200
@@ -962,6 +1273,7 @@ function Payroll() {
               <div className="mt-4 flex gap-2">
 
                 <button
+                  onClick={() => viewPayslip(employee)}
                   className="
                     flex flex-1 items-center justify-center
                     gap-2 rounded-xl border border-slate-200
@@ -977,6 +1289,7 @@ function Payroll() {
                 </button>
 
                 <button
+                  onClick={() => downloadPayslip(employee)}
                   className="
                     flex flex-1 items-center justify-center
                     gap-2 rounded-xl border border-slate-200

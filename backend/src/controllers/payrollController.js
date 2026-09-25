@@ -2,158 +2,509 @@ const pool = require("../config/db");
 
 /*
 |--------------------------------------------------------------------------
-| PAYROLL CALCULATION
+| Helper: Get Employee By Employee Code
 |--------------------------------------------------------------------------
 */
+const getEmployeeByCode = async (employee_code) => {
+    const [employees] = await pool.execute(
+        `
+        SELECT
+            e.id,
+            e.employee_code,
+            e.first_name,
+            e.last_name,
+            e.email,
+            e.salary,
+            e.department_id,
+            e.position,
+            e.status,
 
-const calculatePayroll = ({
-    basic_salary = 0,
+            d.name AS department_name
 
-    house_allowance = 0,
-    transport_allowance = 0,
-    other_allowance = 0,
+        FROM employees e
 
-    allowances = 0,
-    overtime = 0,
-    bonus = 0,
+        LEFT JOIN departments d
+            ON e.department_id = d.id
 
-    tax_deduction = 0,
-    loan_deduction = 0,
-    late_deduction = 0,
-    unpaid_leave_deduction = 0,
-    advance_deduction = 0,
-    other_deduction = 0,
-}) => {
-    const basic = Number(basic_salary) || 0;
+        WHERE e.employee_code = ?
 
-    const house = Number(house_allowance) || 0;
-    const transport = Number(transport_allowance) || 0;
-    const otherAllowance =
-        Number(other_allowance) || 0;
+        LIMIT 1
+        `,
+        [employee_code]
+    );
 
-    const existingAllowances =
-        Number(allowances) || 0;
-
-    const overtimeAmount =
-        Number(overtime) || 0;
-
-    const bonusAmount =
-        Number(bonus) || 0;
-
-    /*
-    |--------------------------------------------------------------------------
-    | Total Allowances
-    |--------------------------------------------------------------------------
-    */
-
-    const totalAllowances =
-        house +
-        transport +
-        otherAllowance +
-        existingAllowances;
-
-    /*
-    |--------------------------------------------------------------------------
-    | Gross Salary
-    |--------------------------------------------------------------------------
-    */
-
-    const grossSalary =
-        basic +
-        totalAllowances +
-        overtimeAmount +
-        bonusAmount;
-
-    /*
-    |--------------------------------------------------------------------------
-    | Deductions
-    |--------------------------------------------------------------------------
-    */
-
-    const tax =
-        Number(tax_deduction) || 0;
-
-    const loan =
-        Number(loan_deduction) || 0;
-
-    const late =
-        Number(late_deduction) || 0;
-
-    const unpaid =
-        Number(unpaid_leave_deduction) || 0;
-
-    const advance =
-        Number(advance_deduction) || 0;
-
-    const otherDeduction =
-        Number(other_deduction) || 0;
-
-    const totalDeduction =
-        tax +
-        loan +
-        late +
-        unpaid +
-        advance +
-        otherDeduction;
-
-    /*
-    |--------------------------------------------------------------------------
-    | Net Salary
-    |--------------------------------------------------------------------------
-    */
-
-    const netSalary =
-        grossSalary -
-        totalDeduction;
-
-    return {
-        total_allowances: totalAllowances,
-        gross_salary: grossSalary,
-        total_deduction: totalDeduction,
-        net_salary: netSalary,
-    };
+    return employees.length > 0
+        ? employees[0]
+        : null;
 };
 
 
 /*
 |--------------------------------------------------------------------------
-| GET ALL PAYROLL
+| Calculate Payroll
 |--------------------------------------------------------------------------
 */
+const calculatePayroll = async (req, res) => {
+    try {
+        const body = req.body || {};
 
+        const {
+            employee_code,
+            payroll_month,
+
+            house_allowance = 0,
+            transport_allowance = 0,
+            other_allowance = 0,
+            allowances = 0,
+
+            overtime = 0,
+            bonus = 0,
+
+            tax_deduction = 0,
+            loan_deduction = 0,
+            late_deduction = null,
+            unpaid_leave_deduction = null,
+            advance_deduction = 0,
+            other_deduction = 0,
+        } = body;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Validation
+        |--------------------------------------------------------------------------
+        */
+
+        if (!employee_code) {
+            return res.status(400).json({
+                success: false,
+                message: "Employee code is required",
+            });
+        }
+
+        if (!payroll_month) {
+            return res.status(400).json({
+                success: false,
+                message: "Payroll month is required",
+            });
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Find Employee
+        |--------------------------------------------------------------------------
+        */
+
+        const employee =
+            await getEmployeeByCode(employee_code);
+
+        if (!employee) {
+            return res.status(404).json({
+                success: false,
+                message:
+                    `Employee ${employee_code} not found`,
+            });
+        }
+
+        if (employee.status !== "Active") {
+            return res.status(400).json({
+                success: false,
+                message:
+                    `Employee ${employee_code} is not active`,
+            });
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Basic Salary
+        |--------------------------------------------------------------------------
+        */
+
+        const basicSalary =
+            Number(employee.salary || 0);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Allowances
+        |--------------------------------------------------------------------------
+        */
+
+        const totalAllowances =
+            Number(house_allowance || 0) +
+            Number(transport_allowance || 0) +
+            Number(other_allowance || 0) +
+            Number(allowances || 0);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Gross Salary
+        |--------------------------------------------------------------------------
+        */
+
+        const grossSalary =
+            basicSalary +
+            totalAllowances +
+            Number(overtime || 0) +
+            Number(bonus || 0);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Get Payroll Month
+        |--------------------------------------------------------------------------
+        */
+
+        const payrollDate =
+            new Date(`${payroll_month}T00:00:00`);
+
+        if (Number.isNaN(payrollDate.getTime())) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Invalid payroll month. Use YYYY-MM-01",
+            });
+        }
+
+        const payrollYear =
+            payrollDate.getFullYear();
+
+        const payrollMonthNumber =
+            payrollDate.getMonth() + 1;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Automatic Late Deduction
+        |--------------------------------------------------------------------------
+        |
+        | Rs. 500 per late attendance.
+        |
+        */
+
+        let calculatedLateDeduction = 0;
+
+        if (late_deduction !== null) {
+
+            calculatedLateDeduction =
+                Number(late_deduction || 0);
+
+        } else {
+
+            const [lateRows] =
+                await pool.execute(
+                    `
+                    SELECT COUNT(*) AS late_days
+
+                    FROM attendance
+
+                    WHERE employee_id = ?
+
+                    AND status = 'Late'
+
+                    AND YEAR(attendance_date) = ?
+
+                    AND MONTH(attendance_date) = ?
+                    `,
+                    [
+                        employee.id,
+                        payrollYear,
+                        payrollMonthNumber,
+                    ]
+                );
+
+            const lateDays =
+                Number(
+                    lateRows[0]?.late_days || 0
+                );
+
+            calculatedLateDeduction =
+                lateDays * 500;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Automatic Unpaid Leave Deduction
+        |--------------------------------------------------------------------------
+        |
+        | Daily salary = Basic salary / 30
+        |
+        */
+
+        let calculatedUnpaidLeaveDeduction = 0;
+
+        if (unpaid_leave_deduction !== null) {
+
+            calculatedUnpaidLeaveDeduction =
+                Number(
+                    unpaid_leave_deduction || 0
+                );
+
+        } else {
+
+            const [leaveRows] =
+                await pool.execute(
+                    `
+                    SELECT
+                        COALESCE(
+                            SUM(total_days),
+                            0
+                        ) AS unpaid_days
+
+                    FROM leaves
+
+                    WHERE employee_id = ?
+
+                    AND status = 'Approved'
+
+                    AND leave_type IN (
+                        'Unpaid',
+                        'Unpaid Leave'
+                    )
+
+                    AND YEAR(start_date) = ?
+
+                    AND MONTH(start_date) = ?
+                    `,
+                    [
+                        employee.id,
+                        payrollYear,
+                        payrollMonthNumber,
+                    ]
+                );
+
+            const unpaidDays =
+                Number(
+                    leaveRows[0]?.unpaid_days || 0
+                );
+
+            const dailySalary =
+                basicSalary / 30;
+
+            calculatedUnpaidLeaveDeduction =
+                unpaidDays * dailySalary;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Total Deductions
+        |--------------------------------------------------------------------------
+        */
+
+        const totalDeduction =
+            Number(tax_deduction || 0) +
+            Number(loan_deduction || 0) +
+            Number(calculatedLateDeduction || 0) +
+            Number(
+                calculatedUnpaidLeaveDeduction || 0
+            ) +
+            Number(advance_deduction || 0) +
+            Number(other_deduction || 0);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Net Salary
+        |--------------------------------------------------------------------------
+        */
+
+        const netSalary =
+            grossSalary - totalDeduction;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Response
+        |--------------------------------------------------------------------------
+        */
+
+        return res.status(200).json({
+            success: true,
+            message: "Payroll calculated successfully",
+
+            payroll: {
+                employee_code:
+                    employee.employee_code,
+
+                employee_name:
+                    `${employee.first_name} ${employee.last_name}`,
+
+                department:
+                    employee.department_name,
+
+                position:
+                    employee.position,
+
+                payroll_month,
+
+                basic_salary:
+                    Number(basicSalary.toFixed(2)),
+
+                house_allowance:
+                    Number(
+                        Number(
+                            house_allowance || 0
+                        ).toFixed(2)
+                    ),
+
+                transport_allowance:
+                    Number(
+                        Number(
+                            transport_allowance || 0
+                        ).toFixed(2)
+                    ),
+
+                other_allowance:
+                    Number(
+                        Number(
+                            other_allowance || 0
+                        ).toFixed(2)
+                    ),
+
+                allowances:
+                    Number(
+                        Number(
+                            allowances || 0
+                        ).toFixed(2)
+                    ),
+
+                total_allowances:
+                    Number(
+                        totalAllowances.toFixed(2)
+                    ),
+
+                overtime:
+                    Number(
+                        Number(
+                            overtime || 0
+                        ).toFixed(2)
+                    ),
+
+                bonus:
+                    Number(
+                        Number(
+                            bonus || 0
+                        ).toFixed(2)
+                    ),
+
+                gross_salary:
+                    Number(
+                        grossSalary.toFixed(2)
+                    ),
+
+                tax_deduction:
+                    Number(
+                        Number(
+                            tax_deduction || 0
+                        ).toFixed(2)
+                    ),
+
+                loan_deduction:
+                    Number(
+                        Number(
+                            loan_deduction || 0
+                        ).toFixed(2)
+                    ),
+
+                late_deduction:
+                    Number(
+                        calculatedLateDeduction.toFixed(2)
+                    ),
+
+                unpaid_leave_deduction:
+                    Number(
+                        calculatedUnpaidLeaveDeduction.toFixed(2)
+                    ),
+
+                advance_deduction:
+                    Number(
+                        Number(
+                            advance_deduction || 0
+                        ).toFixed(2)
+                    ),
+
+                other_deduction:
+                    Number(
+                        Number(
+                            other_deduction || 0
+                        ).toFixed(2)
+                    ),
+
+                total_deduction:
+                    Number(
+                        totalDeduction.toFixed(2)
+                    ),
+
+                net_salary:
+                    Number(
+                        netSalary.toFixed(2)
+                    ),
+            },
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Calculate payroll error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message:
+                "Failed to calculate payroll",
+            error: error.message,
+        });
+    }
+};
+
+
+/*
+|--------------------------------------------------------------------------
+| Get All Payroll
+|--------------------------------------------------------------------------
+*/
 const getPayroll = async (req, res) => {
     try {
+
         const {
             month,
             year,
-            department_id,
             search,
-            status,
+            payment_status,
         } = req.query;
+
 
         let query = `
             SELECT
                 p.id,
+
                 p.employee_id,
+
+                e.employee_code,
+                e.first_name,
+                e.last_name,
+                e.email,
+                e.position,
+
+                d.name AS department_name,
+
                 p.payroll_month,
 
                 p.basic_salary,
 
-                p.allowances,
-                p.overtime,
-                p.bonus,
-
-                p.deductions,
-                p.tax,
-                p.net_salary,
-
-                p.payment_status,
-                p.payment_date,
-                p.payment_method,
-
                 p.house_allowance,
                 p.transport_allowance,
                 p.other_allowance,
+
+                p.allowances,
+                p.overtime,
+                p.bonus,
 
                 p.gross_salary,
 
@@ -163,22 +514,21 @@ const getPayroll = async (req, res) => {
                 p.unpaid_leave_deduction,
                 p.advance_deduction,
                 p.other_deduction,
+
+                p.deductions,
+                p.tax,
                 p.total_deduction,
 
+                p.net_salary,
+
+                p.payment_status,
+                p.payment_date,
+                p.payment_method,
+
                 p.notes,
+
                 p.created_at,
-                p.updated_at,
-
-                e.employee_code,
-                e.first_name,
-                e.last_name,
-                e.email,
-                e.phone,
-                e.position,
-                e.salary,
-
-                d.id AS department_id,
-                d.name AS department_name
+                p.updated_at
 
             FROM payroll p
 
@@ -191,11 +541,13 @@ const getPayroll = async (req, res) => {
             WHERE 1 = 1
         `;
 
+
         const params = [];
+
 
         /*
         |--------------------------------------------------------------------------
-        | MONTH
+        | Month Filter
         |--------------------------------------------------------------------------
         */
 
@@ -207,9 +559,10 @@ const getPayroll = async (req, res) => {
             params.push(Number(month));
         }
 
+
         /*
         |--------------------------------------------------------------------------
-        | YEAR
+        | Year Filter
         |--------------------------------------------------------------------------
         */
 
@@ -221,47 +574,41 @@ const getPayroll = async (req, res) => {
             params.push(Number(year));
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | DEPARTMENT
-        |--------------------------------------------------------------------------
-        */
-
-        if (department_id) {
-            query += `
-                AND e.department_id = ?
-            `;
-
-            params.push(department_id);
-        }
 
         /*
         |--------------------------------------------------------------------------
-        | PAYMENT STATUS
+        | Payment Status Filter
         |--------------------------------------------------------------------------
         */
 
-        if (status) {
+        if (payment_status) {
+
             query += `
                 AND p.payment_status = ?
             `;
 
-            params.push(status);
+            params.push(payment_status);
         }
+
 
         /*
         |--------------------------------------------------------------------------
-        | SEARCH
+        | Search By Employee Code / Name
         |--------------------------------------------------------------------------
         */
 
         if (search) {
+
             query += `
                 AND (
-                    e.first_name LIKE ?
+                    e.employee_code LIKE ?
+                    OR e.first_name LIKE ?
                     OR e.last_name LIKE ?
-                    OR e.employee_code LIKE ?
-                    OR e.email LIKE ?
+                    OR CONCAT(
+                        e.first_name,
+                        ' ',
+                        e.last_name
+                    ) LIKE ?
                 )
             `;
 
@@ -276,17 +623,19 @@ const getPayroll = async (req, res) => {
             );
         }
 
+
         /*
         |--------------------------------------------------------------------------
-        | ORDER
+        | Order
         |--------------------------------------------------------------------------
         */
 
         query += `
             ORDER BY
                 p.payroll_month DESC,
-                e.first_name ASC
+                p.id DESC
         `;
+
 
         const [rows] =
             await pool.execute(
@@ -294,12 +643,15 @@ const getPayroll = async (req, res) => {
                 params
             );
 
+
         return res.status(200).json({
             success: true,
+            count: rows.length,
             payroll: rows,
         });
 
     } catch (error) {
+
         console.error(
             "Get payroll error:",
             error
@@ -317,13 +669,14 @@ const getPayroll = async (req, res) => {
 
 /*
 |--------------------------------------------------------------------------
-| GET PAYROLL BY ID
+| Get Payroll By ID
 |--------------------------------------------------------------------------
 */
-
 const getPayrollById = async (req, res) => {
     try {
+
         const { id } = req.params;
+
 
         const [rows] =
             await pool.execute(
@@ -339,7 +692,6 @@ const getPayrollById = async (req, res) => {
                     e.position,
                     e.salary,
 
-                    d.id AS department_id,
                     d.name AS department_name
 
                 FROM payroll p
@@ -357,7 +709,9 @@ const getPayrollById = async (req, res) => {
                 [id]
             );
 
+
         if (rows.length === 0) {
+
             return res.status(404).json({
                 success: false,
                 message:
@@ -365,12 +719,14 @@ const getPayrollById = async (req, res) => {
             });
         }
 
+
         return res.status(200).json({
             success: true,
             payroll: rows[0],
         });
 
     } catch (error) {
+
         console.error(
             "Get payroll by ID error:",
             error
@@ -379,7 +735,7 @@ const getPayrollById = async (req, res) => {
         return res.status(500).json({
             success: false,
             message:
-                "Failed to load payroll",
+                "Failed to load payroll record",
             error: error.message,
         });
     }
@@ -388,45 +744,34 @@ const getPayrollById = async (req, res) => {
 
 /*
 |--------------------------------------------------------------------------
-| CREATE PAYROLL
+| Create Payroll
 |--------------------------------------------------------------------------
 */
-
 const createPayroll = async (req, res) => {
-    const connection =
-        await pool.getConnection();
+
+    let connection;
 
     try {
 
-        /*
-        |--------------------------------------------------------------------------
-        | IMPORTANT
-        |--------------------------------------------------------------------------
-        | req.body || {} prevents:
-        | Cannot destructure property 'employee_id'
-        |--------------------------------------------------------------------------
-        */
-
         const body = req.body || {};
 
+
         const {
-            employee_id,
+            employee_code,
             payroll_month,
 
             house_allowance = 0,
             transport_allowance = 0,
             other_allowance = 0,
-
             allowances = 0,
+
             overtime = 0,
             bonus = 0,
 
             tax_deduction = 0,
             loan_deduction = 0,
-
             late_deduction = null,
             unpaid_leave_deduction = null,
-
             advance_deduction = 0,
             other_deduction = 0,
 
@@ -436,19 +781,22 @@ const createPayroll = async (req, res) => {
 
         /*
         |--------------------------------------------------------------------------
-        | VALIDATION
+        | Validation
         |--------------------------------------------------------------------------
         */
 
-        if (!employee_id) {
+        if (!employee_code) {
+
             return res.status(400).json({
                 success: false,
                 message:
-                    "Employee ID is required",
+                    "Employee code is required",
             });
         }
 
+
         if (!payroll_month) {
+
             return res.status(400).json({
                 success: false,
                 message:
@@ -459,105 +807,46 @@ const createPayroll = async (req, res) => {
 
         /*
         |--------------------------------------------------------------------------
-        | VALIDATE DATE
+        | Find Employee
         |--------------------------------------------------------------------------
         */
 
-        const payrollDate =
-            new Date(payroll_month);
-
-        if (
-            Number.isNaN(
-                payrollDate.getTime()
-            )
-        ) {
-            return res.status(400).json({
-                success: false,
-                message:
-                    "Invalid payroll month. Use YYYY-MM-DD",
-            });
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | GET EMPLOYEE
-        |--------------------------------------------------------------------------
-        */
-
-        const [employees] =
-            await connection.execute(
-                `
-                SELECT
-                    id,
-                    employee_code,
-                    first_name,
-                    last_name,
-                    salary,
-                    status
-
-                FROM employees
-
-             WHERE employee_code = ?
-
-                LIMIT 1
-                `,
-                [employee_id]
+        const employee =
+            await getEmployeeByCode(
+                employee_code
             );
 
 
-        if (employees.length === 0) {
+        if (!employee) {
+
             return res.status(404).json({
                 success: false,
                 message:
-                    "Employee not found",
+                    `Employee ${employee_code} not found`,
             });
         }
 
 
-        const employee =
-            employees[0];
+        if (employee.status !== "Active") {
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | CHECK EMPLOYEE STATUS
-        |--------------------------------------------------------------------------
-        */
-
-        if (
-            employee.status &&
-            employee.status !== "Active"
-        ) {
             return res.status(400).json({
                 success: false,
                 message:
-                    "Payroll can only be created for an active employee",
+                    `Employee ${employee_code} is not active`,
             });
         }
 
 
         /*
         |--------------------------------------------------------------------------
-        | BASIC SALARY
+        | Check Duplicate Payroll
         |--------------------------------------------------------------------------
         */
 
-        const basic_salary =
-            Number(employee.salary) || 0;
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | PREVENT DUPLICATE PAYROLL
-        |--------------------------------------------------------------------------
-        */
-
-        const [existing] =
-            await connection.execute(
+        const [existingPayroll] =
+            await pool.execute(
                 `
-                SELECT
-                    id
+                SELECT id
 
                 FROM payroll
 
@@ -568,258 +857,260 @@ const createPayroll = async (req, res) => {
                 LIMIT 1
                 `,
                 [
-                    employee_id,
+                    employee.id,
                     payroll_month,
                 ]
             );
 
 
-        if (existing.length > 0) {
+        if (existingPayroll.length > 0) {
+
             return res.status(409).json({
                 success: false,
                 message:
-                    "Payroll already exists for this employee for this month",
-                payrollId:
-                    existing[0].id,
+                    `Payroll already exists for ${employee_code} for ${payroll_month}`,
+                payroll_id:
+                    existingPayroll[0].id,
             });
         }
 
 
         /*
         |--------------------------------------------------------------------------
-        | AUTOMATIC LATE DEDUCTION
+        | Salary
         |--------------------------------------------------------------------------
         */
 
-        let automaticLateDeduction = 0;
-        let lateCount = 0;
+        const basicSalary =
+            Number(employee.salary || 0);
 
 
         /*
         |--------------------------------------------------------------------------
-        | If HR manually sends late_deduction,
-        | use that amount.
-        |
-        | Otherwise automatically calculate:
-        | 500 PKR × late days
+        | Allowances
         |--------------------------------------------------------------------------
         */
 
+        const totalAllowances =
+            Number(house_allowance || 0) +
+            Number(transport_allowance || 0) +
+            Number(other_allowance || 0) +
+            Number(allowances || 0);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Gross Salary
+        |--------------------------------------------------------------------------
+        */
+
+        const grossSalary =
+            basicSalary +
+            totalAllowances +
+            Number(overtime || 0) +
+            Number(bonus || 0);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Payroll Date
+        |--------------------------------------------------------------------------
+        */
+
+        const payrollDate =
+            new Date(`${payroll_month}T00:00:00`);
+
+
+        if (
+            Number.isNaN(
+                payrollDate.getTime()
+            )
+        ) {
+
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Invalid payroll month. Use YYYY-MM-01",
+            });
+        }
+
+
+        const payrollYear =
+            payrollDate.getFullYear();
+
+        const payrollMonthNumber =
+            payrollDate.getMonth() + 1;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Late Deduction
+        |--------------------------------------------------------------------------
+        */
+
+        let calculatedLateDeduction = 0;
+
+
         if (late_deduction !== null) {
 
-            automaticLateDeduction =
-                Number(
-                    late_deduction
-                ) || 0;
+            calculatedLateDeduction =
+                Number(late_deduction || 0);
 
         } else {
 
-            try {
+            const [lateRows] =
+                await pool.execute(
+                    `
+                    SELECT COUNT(*) AS late_days
 
-                const [lateRows] =
-                    await connection.execute(
-                        `
-                        SELECT
-                            COUNT(*) AS late_count
+                    FROM attendance
 
-                        FROM attendance
+                    WHERE employee_id = ?
 
-                        WHERE employee_id = ?
+                    AND status = 'Late'
 
-                        AND MONTH(attendance_date)
-                            = MONTH(?)
+                    AND YEAR(attendance_date) = ?
 
-                        AND YEAR(attendance_date)
-                            = YEAR(?)
-
-                        AND status = 'Late'
-                        `,
-                        [
-                            employee_id,
-                            payroll_month,
-                            payroll_month,
-                        ]
-                    );
-
-
-                lateCount =
-                    Number(
-                        lateRows[0]?.late_count ||
-                        0
-                    );
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Late policy
-                |--------------------------------------------------------------------------
-                */
-
-                automaticLateDeduction =
-                    lateCount * 500;
-
-            } catch (attendanceError) {
-
-                console.log(
-                    "Late deduction skipped:",
-                    attendanceError.message
+                    AND MONTH(attendance_date) = ?
+                    `,
+                    [
+                        employee.id,
+                        payrollYear,
+                        payrollMonthNumber,
+                    ]
                 );
 
-                automaticLateDeduction = 0;
-            }
+
+            const lateDays =
+                Number(
+                    lateRows[0]?.late_days || 0
+                );
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Rs. 500 Per Late Day
+            |--------------------------------------------------------------------------
+            */
+
+            calculatedLateDeduction =
+                lateDays * 500;
         }
 
 
         /*
         |--------------------------------------------------------------------------
-        | AUTOMATIC UNPAID LEAVE DEDUCTION
+        | Unpaid Leave Deduction
         |--------------------------------------------------------------------------
         */
 
-        let automaticUnpaidLeaveDeduction = 0;
-        let unpaidDays = 0;
+        let calculatedUnpaidLeaveDeduction =
+            0;
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | If manually provided, use it.
-        | Otherwise calculate automatically.
-        |--------------------------------------------------------------------------
-        */
 
         if (
             unpaid_leave_deduction !== null
         ) {
 
-            automaticUnpaidLeaveDeduction =
+            calculatedUnpaidLeaveDeduction =
                 Number(
-                    unpaid_leave_deduction
-                ) || 0;
+                    unpaid_leave_deduction || 0
+                );
 
         } else {
 
-            try {
+            const [leaveRows] =
+                await pool.execute(
+                    `
+                    SELECT
+                        COALESCE(
+                            SUM(total_days),
+                            0
+                        ) AS unpaid_days
 
-                const [leaveRows] =
-                    await connection.execute(
-                        `
-                        SELECT
+                    FROM leaves
 
-                            COALESCE(
-                                SUM(total_days),
-                                0
-                            ) AS unpaid_days
+                    WHERE employee_id = ?
 
-                        FROM leaves
+                    AND status = 'Approved'
 
-                        WHERE employee_id = ?
+                    AND leave_type IN (
+                        'Unpaid',
+                        'Unpaid Leave'
+                    )
 
-                        AND MONTH(start_date)
-                            = MONTH(?)
+                    AND YEAR(start_date) = ?
 
-                        AND YEAR(start_date)
-                            = YEAR(?)
-
-                        AND status = 'Approved'
-
-                        AND (
-                            leave_type = 'Unpaid'
-
-                            OR
-
-                            leave_type =
-                                'Unpaid Leave'
-                        )
-                        `,
-                        [
-                            employee_id,
-                            payroll_month,
-                            payroll_month,
-                        ]
-                    );
-
-
-                unpaidDays =
-                    Number(
-                        leaveRows[0]?.unpaid_days ||
-                        0
-                    );
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Daily salary
-                |--------------------------------------------------------------------------
-                */
-
-                const dailySalary =
-                    basic_salary / 30;
-
-
-                automaticUnpaidLeaveDeduction =
-                    unpaidDays *
-                    dailySalary;
-
-            } catch (leaveError) {
-
-                console.log(
-                    "Unpaid leave deduction skipped:",
-                    leaveError.message
+                    AND MONTH(start_date) = ?
+                    `,
+                    [
+                        employee.id,
+                        payrollYear,
+                        payrollMonthNumber,
+                    ]
                 );
 
-                automaticUnpaidLeaveDeduction =
-                    0;
-            }
+
+            const unpaidDays =
+                Number(
+                    leaveRows[0]?.unpaid_days || 0
+                );
+
+
+            const dailySalary =
+                basicSalary / 30;
+
+
+            calculatedUnpaidLeaveDeduction =
+                unpaidDays * dailySalary;
         }
 
 
         /*
         |--------------------------------------------------------------------------
-        | CALCULATE PAYROLL
+        | Total Deductions
         |--------------------------------------------------------------------------
         */
 
-        const calculation =
-            calculatePayroll({
-
-                basic_salary,
-
-                house_allowance,
-                transport_allowance,
-                other_allowance,
-
-                allowances,
-                overtime,
-                bonus,
-
-                tax_deduction,
-
-                loan_deduction,
-
-                late_deduction:
-                    automaticLateDeduction,
-
-                unpaid_leave_deduction:
-                    automaticUnpaidLeaveDeduction,
-
-                advance_deduction,
-
-                other_deduction,
-            });
+        const totalDeduction =
+            Number(tax_deduction || 0) +
+            Number(loan_deduction || 0) +
+            Number(
+                calculatedLateDeduction || 0
+            ) +
+            Number(
+                calculatedUnpaidLeaveDeduction || 0
+            ) +
+            Number(advance_deduction || 0) +
+            Number(other_deduction || 0);
 
 
         /*
         |--------------------------------------------------------------------------
-        | START TRANSACTION
+        | Net Salary
         |--------------------------------------------------------------------------
         */
+
+        const netSalary =
+            grossSalary -
+            totalDeduction;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Start Transaction
+        |--------------------------------------------------------------------------
+        */
+
+        connection =
+            await pool.getConnection();
 
         await connection.beginTransaction();
 
 
         /*
         |--------------------------------------------------------------------------
-        | INSERT PAYROLL
+        | Insert Payroll
         |--------------------------------------------------------------------------
         */
 
@@ -833,19 +1124,13 @@ const createPayroll = async (req, res) => {
 
                     basic_salary,
 
-                    allowances,
-                    overtime,
-                    bonus,
-
-                    deductions,
-                    tax,
-                    net_salary,
-
-                    payment_status,
-
                     house_allowance,
                     transport_allowance,
                     other_allowance,
+
+                    allowances,
+                    overtime,
+                    bonus,
 
                     gross_salary,
 
@@ -856,9 +1141,17 @@ const createPayroll = async (req, res) => {
                     advance_deduction,
                     other_deduction,
 
+                    deductions,
+                    tax,
+
                     total_deduction,
 
+                    net_salary,
+
+                    payment_status,
+
                     notes
+
                 )
 
                 VALUES
@@ -876,61 +1169,94 @@ const createPayroll = async (req, res) => {
                     ?,
                     ?,
 
+                    ?,
+
+                    ?,
+                    ?,
+                    ?,
+                    ?,
+                    ?,
+                    ?,
+
+                    ?,
+                    ?,
+
+                    ?,
+
+                    ?,
+
                     'Pending',
-
-                    ?,
-                    ?,
-                    ?,
-
-                    ?,
-
-                    ?,
-                    ?,
-                    ?,
-                    ?,
-                    ?,
-                    ?,
-
-                    ?,
 
                     ?
                 )
                 `,
                 [
-
-                    employee_id,
+                    employee.id,
                     payroll_month,
 
-                    basic_salary,
+                    basicSalary,
 
-                    allowances,
-                    overtime,
-                    bonus,
+                    Number(
+                        house_allowance || 0
+                    ),
 
-                    calculation.total_deduction,
+                    Number(
+                        transport_allowance || 0
+                    ),
 
-                    tax_deduction,
+                    Number(
+                        other_allowance || 0
+                    ),
 
-                    calculation.net_salary,
+                    Number(
+                        allowances || 0
+                    ),
 
-                    house_allowance,
-                    transport_allowance,
-                    other_allowance,
+                    Number(
+                        overtime || 0
+                    ),
 
-                    calculation.gross_salary,
+                    Number(
+                        bonus || 0
+                    ),
 
-                    tax_deduction,
-                    loan_deduction,
+                    grossSalary,
 
-                    automaticLateDeduction,
+                    Number(
+                        tax_deduction || 0
+                    ),
 
-                    automaticUnpaidLeaveDeduction,
+                    Number(
+                        loan_deduction || 0
+                    ),
 
-                    advance_deduction,
+                    calculatedLateDeduction,
 
-                    other_deduction,
+                    calculatedUnpaidLeaveDeduction,
 
-                    calculation.total_deduction,
+                    Number(
+                        advance_deduction || 0
+                    ),
+
+                    Number(
+                        other_deduction || 0
+                    ),
+
+                    /*
+                    | Legacy deductions field
+                    */
+                    totalDeduction,
+
+                    /*
+                    | Legacy tax field
+                    */
+                    Number(
+                        tax_deduction || 0
+                    ),
+
+                    totalDeduction,
+
+                    netSalary,
 
                     notes,
                 ]
@@ -939,7 +1265,7 @@ const createPayroll = async (req, res) => {
 
         /*
         |--------------------------------------------------------------------------
-        | COMMIT
+        | Commit
         |--------------------------------------------------------------------------
         */
 
@@ -948,7 +1274,7 @@ const createPayroll = async (req, res) => {
 
         /*
         |--------------------------------------------------------------------------
-        | SUCCESS RESPONSE
+        | Response
         |--------------------------------------------------------------------------
         */
 
@@ -959,95 +1285,76 @@ const createPayroll = async (req, res) => {
             message:
                 "Payroll created successfully",
 
-            payrollId:
-                result.insertId,
+            payroll: {
 
-            employee: {
-                id: employee.id,
+                id:
+                    result.insertId,
+
                 employee_code:
                     employee.employee_code,
-                name:
-                    `${employee.first_name || ""} ${employee.last_name || ""}`.trim(),
-            },
 
-            calculation: {
+                employee_name:
+                    `${employee.first_name} ${employee.last_name}`,
 
-                basic_salary,
+                payroll_month,
 
-                total_allowances:
-                    calculation.total_allowances,
+                basic_salary:
+                    Number(
+                        basicSalary.toFixed(2)
+                    ),
 
                 gross_salary:
-                    calculation.gross_salary,
-
-                late_count:
-                    lateCount,
-
-                late_deduction:
-                    automaticLateDeduction,
-
-                unpaid_leave_days:
-                    unpaidDays,
-
-                unpaid_leave_deduction:
-                    automaticUnpaidLeaveDeduction,
+                    Number(
+                        grossSalary.toFixed(2)
+                    ),
 
                 total_deduction:
-                    calculation.total_deduction,
+                    Number(
+                        totalDeduction.toFixed(2)
+                    ),
 
                 net_salary:
-                    calculation.net_salary,
+                    Number(
+                        netSalary.toFixed(2)
+                    ),
+
+                payment_status:
+                    "Pending",
             },
         });
 
     } catch (error) {
 
-        /*
-        |--------------------------------------------------------------------------
-        | ROLLBACK
-        |--------------------------------------------------------------------------
-        */
-
-        try {
+        if (connection) {
             await connection.rollback();
-        } catch (rollbackError) {
-            console.error(
-                "Rollback error:",
-                rollbackError.message
-            );
         }
-
 
         console.error(
             "Create payroll error:",
             error
         );
 
-
         return res.status(500).json({
-
             success: false,
-
             message:
                 "Failed to create payroll",
-
-            error:
-                error.message,
+            error: error.message,
         });
 
     } finally {
 
-        connection.release();
+        if (connection) {
+            connection.release();
+        }
     }
 };
 
 
 /*
 |--------------------------------------------------------------------------
-| UPDATE PAYROLL
+| Update Payroll
 |--------------------------------------------------------------------------
 */
-
 const updatePayroll = async (req, res) => {
 
     try {
@@ -1058,39 +1365,173 @@ const updatePayroll = async (req, res) => {
         const body =
             req.body || {};
 
-        const {
 
-            house_allowance = 0,
-            transport_allowance = 0,
-            other_allowance = 0,
+        /*
+        |--------------------------------------------------------------------------
+        | Check Payroll
+        |--------------------------------------------------------------------------
+        */
 
-            allowances = 0,
-            overtime = 0,
-            bonus = 0,
+        const [existing] =
+            await pool.execute(
+                `
+                SELECT id
 
-            tax_deduction = 0,
-            loan_deduction = 0,
-            late_deduction = 0,
-            unpaid_leave_deduction = 0,
-            advance_deduction = 0,
-            other_deduction = 0,
+                FROM payroll
 
-            notes = null,
+                WHERE id = ?
 
-        } = body;
+                LIMIT 1
+                `,
+                [id]
+            );
+
+
+        if (existing.length === 0) {
+
+            return res.status(404).json({
+                success: false,
+                message:
+                    "Payroll record not found",
+            });
+        }
 
 
         /*
         |--------------------------------------------------------------------------
-        | GET PAYROLL
+        | Build Dynamic Update
         |--------------------------------------------------------------------------
         */
+
+        const allowedFields = [
+
+            "house_allowance",
+            "transport_allowance",
+            "other_allowance",
+
+            "allowances",
+            "overtime",
+            "bonus",
+
+            "tax_deduction",
+            "loan_deduction",
+            "late_deduction",
+            "unpaid_leave_deduction",
+            "advance_deduction",
+            "other_deduction",
+
+            "deductions",
+            "tax",
+
+            "gross_salary",
+            "total_deduction",
+            "net_salary",
+
+            "payment_status",
+            "payment_date",
+            "payment_method",
+
+            "notes",
+        ];
+
+
+        const fields = [];
+        const values = [];
+
+
+        allowedFields.forEach(
+            (field) => {
+
+                if (
+                    body[field] !==
+                    undefined
+                ) {
+
+                    fields.push(
+                        `${field} = ?`
+                    );
+
+                    values.push(
+                        body[field]
+                    );
+                }
+            }
+        );
+
+
+        if (fields.length === 0) {
+
+            return res.status(400).json({
+                success: false,
+                message:
+                    "No valid fields provided for update",
+            });
+        }
+
+
+        values.push(id);
+
+
+        const query = `
+            UPDATE payroll
+
+            SET
+                ${fields.join(", ")}
+
+            WHERE id = ?
+        `;
+
+
+        await pool.execute(
+            query,
+            values
+        );
+
+
+        return res.status(200).json({
+
+            success: true,
+
+            message:
+                "Payroll updated successfully",
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Update payroll error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message:
+                "Failed to update payroll",
+            error: error.message,
+        });
+    }
+};
+
+
+/*
+|--------------------------------------------------------------------------
+| Process Payroll
+|--------------------------------------------------------------------------
+*/
+const processPayroll = async (req, res) => {
+
+    try {
+
+        const { id } =
+            req.params;
+
 
         const [rows] =
             await pool.execute(
                 `
                 SELECT
-                    basic_salary
+                    id,
+                    payment_status
 
                 FROM payroll
 
@@ -1112,189 +1553,30 @@ const updatePayroll = async (req, res) => {
         }
 
 
-        const basic_salary =
-            Number(
-                rows[0].basic_salary
-            ) || 0;
+        if (
+            rows[0].payment_status !==
+            "Pending"
+        ) {
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | CALCULATE
-        |--------------------------------------------------------------------------
-        */
-
-        const calculation =
-            calculatePayroll({
-
-                basic_salary,
-
-                house_allowance,
-                transport_allowance,
-                other_allowance,
-
-                allowances,
-                overtime,
-                bonus,
-
-                tax_deduction,
-                loan_deduction,
-                late_deduction,
-                unpaid_leave_deduction,
-                advance_deduction,
-                other_deduction,
+            return res.status(400).json({
+                success: false,
+                message:
+                    `Payroll cannot be processed because its current status is ${rows[0].payment_status}`,
             });
+        }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | UPDATE
-        |--------------------------------------------------------------------------
-        */
 
         await pool.execute(
             `
             UPDATE payroll
 
             SET
-
-                allowances = ?,
-                overtime = ?,
-                bonus = ?,
-
-                deductions = ?,
-                tax = ?,
-
-                net_salary = ?,
-
-                house_allowance = ?,
-                transport_allowance = ?,
-                other_allowance = ?,
-
-                gross_salary = ?,
-
-                tax_deduction = ?,
-                loan_deduction = ?,
-                late_deduction = ?,
-                unpaid_leave_deduction = ?,
-                advance_deduction = ?,
-                other_deduction = ?,
-
-                total_deduction = ?,
-
-                notes = ?
+                payment_status = 'Processed'
 
             WHERE id = ?
             `,
-            [
-
-                allowances,
-                overtime,
-                bonus,
-
-                calculation.total_deduction,
-
-                tax_deduction,
-
-                calculation.net_salary,
-
-                house_allowance,
-                transport_allowance,
-                other_allowance,
-
-                calculation.gross_salary,
-
-                tax_deduction,
-                loan_deduction,
-                late_deduction,
-                unpaid_leave_deduction,
-                advance_deduction,
-                other_deduction,
-
-                calculation.total_deduction,
-
-                notes,
-
-                id,
-            ]
+            [id]
         );
-
-
-        return res.status(200).json({
-
-            success: true,
-
-            message:
-                "Payroll updated successfully",
-
-            calculation,
-        });
-
-    } catch (error) {
-
-        console.error(
-            "Update payroll error:",
-            error
-        );
-
-        return res.status(500).json({
-
-            success: false,
-
-            message:
-                "Failed to update payroll",
-
-            error:
-                error.message,
-        });
-    }
-};
-
-
-/*
-|--------------------------------------------------------------------------
-| PROCESS PAYROLL
-|--------------------------------------------------------------------------
-*/
-
-const processPayroll = async (req, res) => {
-
-    try {
-
-        const { id } =
-            req.params;
-
-
-        const [result] =
-            await pool.execute(
-                `
-                UPDATE payroll
-
-                SET
-                    payment_status =
-                        'Processed'
-
-                WHERE id = ?
-
-                AND payment_status =
-                    'Pending'
-                `,
-                [id]
-            );
-
-
-        if (
-            result.affectedRows === 0
-        ) {
-
-            return res.status(400).json({
-
-                success: false,
-
-                message:
-                    "Payroll cannot be processed. It may already be processed or paid.",
-            });
-        }
 
 
         return res.status(200).json({
@@ -1313,14 +1595,10 @@ const processPayroll = async (req, res) => {
         );
 
         return res.status(500).json({
-
             success: false,
-
             message:
                 "Failed to process payroll",
-
-            error:
-                error.message,
+            error: error.message,
         });
     }
 };
@@ -1328,10 +1606,9 @@ const processPayroll = async (req, res) => {
 
 /*
 |--------------------------------------------------------------------------
-| MARK PAYROLL AS PAID
+| Pay Payroll
 |--------------------------------------------------------------------------
 */
-
 const payPayroll = async (req, res) => {
 
     try {
@@ -1342,64 +1619,89 @@ const payPayroll = async (req, res) => {
         const body =
             req.body || {};
 
+
         const {
-            payment_method = "Cash",
+            payment_method = "Bank Transfer",
             payment_date = null,
         } = body;
 
 
         /*
         |--------------------------------------------------------------------------
-        | UPDATE
+        | Check Payroll
         |--------------------------------------------------------------------------
         */
 
-        const [result] =
+        const [rows] =
             await pool.execute(
                 `
-                UPDATE payroll
+                SELECT
+                    id,
+                    payment_status
 
-                SET
-
-                    payment_status =
-                        'Paid',
-
-                    payment_method = ?,
-
-                    payment_date =
-                        COALESCE(
-                            ?,
-                            CURDATE()
-                        )
+                FROM payroll
 
                 WHERE id = ?
 
-                AND payment_status
-                    IN (
-                        'Processed',
-                        'Pending'
-                    )
+                LIMIT 1
                 `,
-                [
-                    payment_method,
-                    payment_date,
-                    id,
-                ]
+                [id]
             );
 
 
+        if (rows.length === 0) {
+
+            return res.status(404).json({
+                success: false,
+                message:
+                    "Payroll record not found",
+            });
+        }
+
+
         if (
-            result.affectedRows === 0
+            rows[0].payment_status ===
+            "Paid"
         ) {
 
             return res.status(400).json({
-
                 success: false,
-
                 message:
-                    "Payroll cannot be marked as paid",
+                    "Payroll has already been paid",
             });
         }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Update Payment
+        |--------------------------------------------------------------------------
+        */
+
+        await pool.execute(
+            `
+            UPDATE payroll
+
+            SET
+
+                payment_status = 'Paid',
+
+                payment_method = ?,
+
+                payment_date =
+                    COALESCE(
+                        ?,
+                        CURDATE()
+                    )
+
+            WHERE id = ?
+            `,
+            [
+                payment_method,
+                payment_date,
+                id,
+            ]
+        );
 
 
         return res.status(200).json({
@@ -1407,7 +1709,7 @@ const payPayroll = async (req, res) => {
             success: true,
 
             message:
-                "Payroll marked as paid",
+                "Payroll paid successfully",
         });
 
     } catch (error) {
@@ -1418,14 +1720,10 @@ const payPayroll = async (req, res) => {
         );
 
         return res.status(500).json({
-
             success: false,
-
             message:
-                "Failed to mark payroll as paid",
-
-            error:
-                error.message,
+                "Failed to pay payroll",
+            error: error.message,
         });
     }
 };
@@ -1433,10 +1731,9 @@ const payPayroll = async (req, res) => {
 
 /*
 |--------------------------------------------------------------------------
-| DELETE PAYROLL
+| Delete Payroll
 |--------------------------------------------------------------------------
 */
-
 const deletePayroll = async (req, res) => {
 
     try {
@@ -1445,29 +1742,39 @@ const deletePayroll = async (req, res) => {
             req.params;
 
 
-        const [result] =
+        const [rows] =
             await pool.execute(
                 `
-                DELETE FROM payroll
+                SELECT id
+
+                FROM payroll
 
                 WHERE id = ?
+
+                LIMIT 1
                 `,
                 [id]
             );
 
 
-        if (
-            result.affectedRows === 0
-        ) {
+        if (rows.length === 0) {
 
             return res.status(404).json({
-
                 success: false,
-
                 message:
                     "Payroll record not found",
             });
         }
+
+
+        await pool.execute(
+            `
+            DELETE FROM payroll
+
+            WHERE id = ?
+            `,
+            [id]
+        );
 
 
         return res.status(200).json({
@@ -1486,14 +1793,10 @@ const deletePayroll = async (req, res) => {
         );
 
         return res.status(500).json({
-
             success: false,
-
             message:
                 "Failed to delete payroll",
-
-            error:
-                error.message,
+            error: error.message,
         });
     }
 };
@@ -1501,23 +1804,17 @@ const deletePayroll = async (req, res) => {
 
 /*
 |--------------------------------------------------------------------------
-| EXPORT CONTROLLERS
+| Export Controllers
 |--------------------------------------------------------------------------
 */
 
 module.exports = {
-
+    calculatePayroll,
     getPayroll,
-
     getPayrollById,
-
     createPayroll,
-
     updatePayroll,
-
     processPayroll,
-
     payPayroll,
-
     deletePayroll,
 };
